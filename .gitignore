@@ -1,6 +1,11 @@
 # Compiled source #
 ###################
+
+*.pc
 *.pyc
+*.pyo
+__pycache__
+
 *.com
 *.class
 *.dll
