@@ -1,4 +1,4 @@
-from pytorch_transformers import BertModel as BertModel, BertConfig
+from pytorch_transformers import BertModel, BertConfig
 import torch
 from torch import nn
 from token_layers import TokenClsLayer, SentClsLayer
