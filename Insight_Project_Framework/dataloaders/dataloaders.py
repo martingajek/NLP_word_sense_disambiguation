@@ -17,9 +17,9 @@ class CorpusDataset(Dataset):
     def __getitem__(self, idx):
         row = self.corpus_dataframe.iloc[idx]
         return (torch.tensor(row['input_ids'][0]),  # Input token encodings
-                torch.tensor(row['sent_indexes'][0]), # Sentence encoding
-                torch.tensor(row['target_token_idx'][0]), # Target token indexes
-                torch.tensor(row['is_proper_context'],dtype=torch.float)) # Labels
+                torch.tensor(row['sent_indexes'][0], dtype=torch.int64), # Sentence encoding
+                torch.tensor(row['target_token_idx'][0], dtype=torch.int64), # Target token indexes
+                torch.tensor(row['is_proper_context'],dtype=torch.int64)) # Labels
     
 class TrainValDataloader():
     """

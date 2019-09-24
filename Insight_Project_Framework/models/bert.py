@@ -19,7 +19,7 @@ class BertForWSD(nn.Module):
     
     """
   
-    def __init__(self, num_labels=2, bert_model_type='bert-base-uncased',token_layer='token-cls'):
+    def __init__(self, num_labels=2, bert_model_type='bert-base-uncased',token_layer='token-cls',output_logits=True):
         super(BertForWSD, self).__init__()
         
         self.config = BertConfig()
@@ -27,6 +27,7 @@ class BertForWSD(nn.Module):
         self.num_labels = 2
         self.bert = BertModel.from_pretrained(bert_model_type)
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
+        self.output_logits = output_logits
         
         # Define which token selection layer to use
         if token_layer == 'token-cls':
@@ -37,7 +38,8 @@ class BertForWSD(nn.Module):
             raise ValueError("Unidentified parameter for token selection layer")       
                  
         self.classifier = nn.Linear(768, num_labels)
-        self.softmax = nn.Softmax(dim=0)
+        if not output_logits:
+            self.softmax = nn.Softmax(dim=1) # to be checked!!!
         
         nn.init.xavier_normal_(self.classifier.weight)   
     
@@ -55,5 +57,6 @@ class BertForWSD(nn.Module):
             _target_token_embeddings = self.tokenselectlayer(_encoded_layers)
         pooled_output = self.dropout(_target_token_embeddings)
         logits = self.classifier(pooled_output)
-
+        if self.output_logits:
+            return logits
         return self.softmax(logits)
