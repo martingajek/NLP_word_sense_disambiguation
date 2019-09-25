@@ -1,0 +1,84 @@
+from tqdm import tqdm
+import pandas as pd
+
+import wordnet_gloss_search as wgs
+import parse_semcor as pssc
+
+
+def add_wordnet_gloss(_semcordf,verbose=True):
+    """ 
+    Given a base semcor corpus dataframe generates gloss column for each word
+    adds a corresponding to other glosses not relevant in each context
+    """
+    if verbose: print('Adding wordnet glosses')
+    _semcordf['gloss']  = _semcordf.wn_index.apply(wgs.wordnet_get_gloss)
+    if verbose: print('Adding other wordnet glosses to semcor...',end="")
+    _semcordf['other_glosses']  = _semcordf.wn_index.apply(wgs.wordnet_get_other_glosses,{'select_name':True})
+    # number of other glosses gives an idea of the ambiguity of each word
+    _semcordf['other_glossesnum'] = _semcordf['other_glosses'].apply(len)
+    if verbose: print('Done!')
+
+
+def gen_sentence_context_pairs(_df):
+    """
+    Given a semcor corpus dataframe where there is one word per row (Dataframe just for one sentence)
+    Concatenates the rows into a proper sentence
+    finds ambiguous words (With more than one gloss) and generates 
+    labeled sentence/context pairs for each ambiguous word.
+    outputs a list of dictionaries.
+    """
+    
+    concatenated_sentence = _df.text.str.cat(sep = ' ').replace(" '","'")
+    basedct = {'sent_full':concatenated_sentence,
+               'sent':_df.iloc[0].sent,
+               'file':_df.iloc[0].file}
+
+    semcor_sentences = []
+    for i,line in _df[(_df.other_glossesnum > 0) & (_df.gloss != 'WN Error')].iterrows(): 
+
+        # First append the proper context to dct with label True
+        newbasedct = basedct.copy()
+        newbasedct['target_word'] = line.text
+        newbasedct['context'] = line.gloss
+        newbasedct['is_proper_context'] = True
+        semcor_sentences.append(newbasedct)
+        # Then append all different contexes with False labels
+        for improper_context in line.other_glosses:
+            newbasedct = basedct.copy()
+            newbasedct['target_word'] = line.text
+            newbasedct['context'] = improper_context
+            newbasedct['is_proper_context'] = False
+            semcor_sentences.append(newbasedct)
+                
+    return semcor_sentences
+
+
+def build_joint_dataset(_df):
+    """
+    Builds full dataset of labeled sentence/context pairs
+    inputs are the full semcor dataframe (One word per row) witg gloss and other glosses
+    outputs full dataset dataframe
+    """
+    groupbyobj = _df.groupby(['sent','file'])
+    full_dict_list = []
+    for [sentnum,file],gp in tqdm(groupbyobj,total=len(groupbyobj)):
+        full_dict_list.extend(gen_sentence_context_pairs(gp))
+    cols = ['file','sent','sent_full','target_word','context','is_proper_context']
+    return pd.DataFrame(full_dict_list)[cols]
+
+def build_joint_semcor_gloss_corpus(_basepath,verbose=True):
+    """
+    Given filepath to base folder of semcor3.0 coprus containing the xml files
+    Parses corpus and generates joint sentence-context pairs from wordnet glosses    
+    """
+    
+    semcor_corpus_df = pssc.build_semcor_corpus(_basepath,verbose=verbose)
+    add_wordnet_gloss(semcor_corpus_df,verbose=verbose)
+    if verbose: print('Processing adn labeling joint sentence-context pairs...',end="")
+    final_corpus = build_joint_dataset(semcor_corpus_df)
+    if verbose: print('Done!')
+    return final_corpus
+
+
+
+
