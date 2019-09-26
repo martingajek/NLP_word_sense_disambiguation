@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from keras.preprocessing.sequence import pad_sequences
 from pytorch_transformers import BertTokenizer
+from tqdm import tqdm
 
 ################################################################################################
 #                                                                                             #
@@ -31,7 +32,7 @@ def format_sentences_BERT(_row,weak_supervision=False):
 
 
 
-def tokenize_and_index(_df,max_len=MAX_LEN,tokenizer=DEF_TOKENIZER,weak_supervision=False):
+def tokenize_and_index(_df,max_len=MAX_LEN,tokenizer=DEF_TOKENIZER,weak_supervision=False,display_progress = True):
     """
     Given corpus dataframe with one sentence per row as well as target word and definition
     preprocesses input sentence (adds start/sep tokens and appends context) then
@@ -40,10 +41,15 @@ def tokenize_and_index(_df,max_len=MAX_LEN,tokenizer=DEF_TOKENIZER,weak_supervis
     
     """
     
-    _df['preproc_sent'] = _df.apply(format_sentences_BERT,axis=1,weak_supervision=weak_supervision)
-    _df['tokenized_sent'] = _df.preproc_sent.apply(tokenizer.tokenize)
-    _df['tokenized_target_word'] = _df.target_word.apply(lambda row: tokenizer.tokenize(row)[0])
-    _df['input_ids'] = _df.tokenized_sent.apply(tokenizer.convert_tokens_to_ids)
+    
+    tqdm.pandas(desc="Sentence preprocessing")    
+    _df['preproc_sent'] = _df.progress_apply(format_sentences_BERT,axis=1,weak_supervision=weak_supervision)
+    tqdm.pandas(desc="Sentence Tokenization")
+    _df['tokenized_sent'] = _df.preproc_sent.progress_apply(tokenizer.tokenize)
+    tqdm.pandas(desc="Tokenizing target words")
+    _df['tokenized_target_word'] = _df.target_word.progress_apply(lambda row: tokenizer.tokenize(row)[0])
+    tqdm.pandas(desc="Converting tokens to embeddings")
+    _df['input_ids'] = _df.tokenized_sent.progress_apply(tokenizer.convert_tokens_to_ids)
     
     padded_input_ids = pad_sequences(_df['input_ids'], 
                                      maxlen=max_len, dtype="long",padding = "post", truncating = "post")
@@ -64,7 +70,8 @@ def gen_sentence_indexes(_df,max_len=MAX_LEN):
                                      +[1]*(_index_sep_tokens[1]-_index_sep_tokens[0]))
         return _sentence_indexes
     
-    _df['sent_indexes'] = _df.apply(get_index_of_sep,axis=1)
+    tqdm.pandas(desc="Indexing sentences") 
+    _df['sent_indexes'] = _df.progress_apply(get_index_of_sep,axis=1)
     padded_sent_idx = pad_sequences(_df['sent_indexes'],
                                                maxlen=MAX_LEN, dtype="long",
                                                padding = "post", truncating = "post",value=1)
@@ -79,7 +86,8 @@ def find_index_of_target_token(_df):
     find_token = lambda  _row: [i for i,word  in \
                          enumerate(_row['tokenized_sent']) \
                          if word == _row['tokenized_target_word'].lower()]
-    _df['target_token_idx'] = _df.apply(find_token,axis=1)
+    tqdm.pandas(desc="Finding target token in sentence") 
+    _df['target_token_idx'] = _df.progress_apply(find_token,axis=1)
     
     
     
