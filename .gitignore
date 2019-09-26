@@ -7,7 +7,9 @@
 *checkpoint.ipynb
 __pycache__/
 .ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
 model_checkpoints/
+
 logs/
 
 *.com
