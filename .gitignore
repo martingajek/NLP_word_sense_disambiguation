@@ -5,6 +5,8 @@
 *.pyc
 *.pyo
 __pycache__
+.ipynb_checkpoints
+model_checkpoints
 
 *.com
 *.class
