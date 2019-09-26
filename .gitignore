@@ -4,9 +4,11 @@
 *.pc
 *.pyc
 *.pyo
-__pycache__
-.ipynb_checkpoints
-model_checkpoints
+*checkpoint.ipynb
+__pycache__/
+.ipynb_checkpoints/
+model_checkpoints/
+logs/
 
 *.com
 *.class
@@ -43,3 +45,5 @@ model_checkpoints
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+.vscode/
