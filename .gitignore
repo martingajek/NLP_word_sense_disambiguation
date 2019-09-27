@@ -53,3 +53,4 @@ Thumbs.db
 .vscode/
 # tensorflow log files
 events.out.* 
+src/pip-delete-this-directory.txt

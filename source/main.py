@@ -226,8 +226,8 @@ def run(dtloader, epochs, lr,weight_decay_rate, log_interval=10,
             "Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
             .format(engine.state.epoch, avg_accuracy, avg_bce))
         if log_dir:
-            writer.add_scalar("training/avg_loss", avg_accuracy, engine.state.epoch)
-            writer.add_scalar("training/avg_accuracy", avg_bce, engine.state.epoch)
+            writer.add_scalar("training/avg_accuracy", avg_accuracy, engine.state.epoch)
+            writer.add_scalar("training/avg_loss", avg_bce, engine.state.epoch)
         
     def log_validation_results(engine):
         validation_evaluator.run(dtloader.val_dataloader)
@@ -296,6 +296,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_path", type=str, default="../data/preprocessed/fullcorpus.feather",
                         help="Input data path")
     args = parser.parse_args()
+                        
 
     N_FILES = 5
            
