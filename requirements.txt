@@ -20,5 +20,7 @@ pytorch-ignite==0.2.0
 pytorch-transformers==1.2.0
 ipdb==0.12.2
 pyarrow==0.14.1
+nltk==3.4.5
+tqdm==4.35.0
 #tensorboardX from git repo
 -e git://github.com/lanpa/tensorboardX#egg=tensorboardX

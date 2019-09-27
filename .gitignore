@@ -4,6 +4,8 @@
 *.pc
 *.pyc
 *.pyo
+*.naf
+*.feather
 *checkpoint.ipynb
 __pycache__/
 .ipynb_checkpoints/
