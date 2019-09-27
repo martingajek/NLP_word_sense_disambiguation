@@ -27,12 +27,12 @@ def format_sentences_BERT(_row,weak_supervision=False):
     and appends [CLS] and [SEP] tags.   
     """
     if not weak_supervision:
-        return '[CLS] '+_row['sent_full']+' [SEP] '+_row['context']+' [SEP]'
-    return '[CLS] '+_row['sent_full']+' [SEP] '+_row['target_word']+': '+_row['context']+' [SEP]'
+        return '[CLS] '+_row.loc['sent_full']+' [SEP] '+_row.loc['context']+' [SEP]'
+    return '[CLS] '+_row.loc['sent_full']+' [SEP] '+_row.loc['target_word']+': '+_row.loc['context']+' [SEP]'
 
 
 
-def tokenize_and_index(_df,max_len=MAX_LEN,tokenizer=DEF_TOKENIZER,weak_supervision=False,display_progress = True):
+def tokenize_and_index(_df,output_len=MAX_LEN,tokenizer=DEF_TOKENIZER,weak_supervision=False,display_progress = True):
     """
     Given corpus dataframe with one sentence per row as well as target word and definition
     preprocesses input sentence (adds start/sep tokens and appends context) then
@@ -43,20 +43,20 @@ def tokenize_and_index(_df,max_len=MAX_LEN,tokenizer=DEF_TOKENIZER,weak_supervis
     
     
     tqdm.pandas(desc="Sentence preprocessing")    
-    _df['preproc_sent'] = _df.progress_apply(format_sentences_BERT,axis=1,weak_supervision=weak_supervision)
+    _df.loc[:,'preproc_sent'] = _df.progress_apply(format_sentences_BERT,axis=1,weak_supervision=weak_supervision)
     tqdm.pandas(desc="Sentence Tokenization")
-    _df['tokenized_sent'] = _df.preproc_sent.progress_apply(tokenizer.tokenize)
+    _df.loc[:,'tokenized_sent'] = _df.preproc_sent.progress_apply(tokenizer.tokenize)
     tqdm.pandas(desc="Tokenizing target words")
-    _df['tokenized_target_word'] = _df.target_word.progress_apply(lambda row: tokenizer.tokenize(row)[0])
+    _df.loc[:,'tokenized_target_word'] = _df.target_word.progress_apply(lambda row: tokenizer.tokenize(row)[0])
     tqdm.pandas(desc="Converting tokens to embeddings")
-    _df['input_ids'] = _df.tokenized_sent.progress_apply(tokenizer.convert_tokens_to_ids)
+    _df.loc[:,'input_ids'] = _df.tokenized_sent.progress_apply(tokenizer.convert_tokens_to_ids)
     
     padded_input_ids = pad_sequences(_df['input_ids'], 
-                                     maxlen=max_len, dtype="long",padding = "post", truncating = "post")
-    _df['input_ids'] = np.split(padded_input_ids, _df.shape[0], axis=0)
+                                     maxlen=output_len, dtype="long",padding = "post", truncating = "post")
+    _df.loc[:,'input_ids'] = np.split(padded_input_ids, _df.shape[0], axis=0)
     
     
-def gen_sentence_indexes(_df,max_len=MAX_LEN):
+def gen_sentence_indexes(_df,output_len=MAX_LEN):
     """
     given input dataframe with on tokenized sentence per row
     generates input sentence tensor and pads it to MAX_LEN with trailing 1's (2nd sentence)
@@ -71,11 +71,11 @@ def gen_sentence_indexes(_df,max_len=MAX_LEN):
         return _sentence_indexes
     
     tqdm.pandas(desc="Indexing sentences") 
-    _df['sent_indexes'] = _df.progress_apply(get_index_of_sep,axis=1)
+    _df.loc[:,'sent_indexes'] = _df.progress_apply(get_index_of_sep,axis=1)
     padded_sent_idx = pad_sequences(_df['sent_indexes'],
                                                maxlen=MAX_LEN, dtype="long",
                                                padding = "post", truncating = "post",value=1)
-    _df['sent_indexes'] = np.split(padded_sent_idx, _df.shape[0], axis=0)
+    _df.loc[:,'sent_indexes'] = np.split(padded_sent_idx, _df.shape[0], axis=0)
     
 
 def find_index_of_target_token(_df):
@@ -87,7 +87,30 @@ def find_index_of_target_token(_df):
                          enumerate(_row['tokenized_sent']) \
                          if word == _row['tokenized_target_word'].lower()]
     tqdm.pandas(desc="Finding target token in sentence") 
-    _df['target_token_idx'] = _df.progress_apply(find_token,axis=1)
+    _df.loc[:,'target_token_idx'] = _df.progress_apply(find_token,axis=1)
+
+
+
+def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,output_len=MAX_LEN):
+    """
+    given preprocessed corpus dataframe tokenizes and creates the embeddings for
+    input for the tranformer model. Furthermore it filters bad rows where the index
+    of target word is larger than the size of each tokenized swquence.
+    """
+    
+    _smpldf = _df
+    if sample_size:
+        _smpldf = _df.sample(sample_size)
+    
+    tokenize_and_index(_smpldf,output_len=output_len)
+    gen_sentence_indexes(_smpldf,output_len=output_len)
+    find_index_of_target_token(_smpldf)
+    
+    if filter_bad_rows: # rows where the target word index exceeds tensor size 
+        _smpldf = _smpldf[_smpldf.target_token_idx.apply(lambda x: x[0] <  output_len)]
+
+    
+    return _smpldf
     
     
     

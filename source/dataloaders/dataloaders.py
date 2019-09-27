@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from torch.utils.data import Dataset, DataLoader, RandomSampler, SequentialSampler
+from torch.utils.data import Dataset, DataLoader, RandomSampler, SequentialSampler, SubsetRandomSampler
 import torch
 
 
@@ -35,7 +35,7 @@ class TrainValDataloader():
 
     the class exposes 2 dataloaders, namely the train_dataloader and val_dataloader    
     """
-    def __init__(self, data, batch_size, test_size=0.2):
+    def __init__(self, data, batch_size, test_size=0.2, val_sample_dataloader=False, val_sample_size=0.1):
         self.batch_size = batch_size
         data_subset = data[['input_ids','sent_indexes',
                             'target_token_idx','is_proper_context']]
@@ -56,4 +56,13 @@ class TrainValDataloader():
         self.val_dataloader = DataLoader(self.val_dataset, 
                                          sampler=self.val_sampler, 
                                          batch_size=self.batch_size)
+
+        if val_sample_dataloader:
+            num_samples = int(len(self.val_dataset)*val_sample_size)
+            assert num_samples > 0, "Number of samples for validation sample dataloader is 0, increase val_sample_size fraction" 
+            self.subset_val_sampler = RandomSampler(self.val_dataset,num_samples=num_samples,replacement=True,)
+            self.subset_val_dataloader = DataLoader(self.val_dataset, 
+                                                 sampler=self.subset_val_sampler, 
+                                                 batch_size=self.batch_size)
+
     

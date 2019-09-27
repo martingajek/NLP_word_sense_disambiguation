@@ -1,7 +1,7 @@
 from pytorch_transformers import BertModel, BertConfig
 import torch
 from torch import nn
-from token_layers import TokenClsLayer, SentClsLayer
+from models.token_layers import TokenClsLayer, SentClsLayer
 
 class BertForWSD(nn.Module):
     """     
