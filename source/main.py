@@ -278,7 +278,7 @@ if __name__ == "__main__":
     #parser.add_argument('--val_batch_size', type=int, default=1000,
     #                    help='input batch size for validation (default: 1000)')
     parser.add_argument('--epochs', type=int, default=10,
-                        help='number of epochs to train (default: 10)')
+                       help='number of epochs to train (default: 10)')
     parser.add_argument('--lr', type=float, default=2e-5,
                         help='learning rate (default: 0.01)')
     parser.add_argument('--weight_decay', type=float, default=0.01,
@@ -292,8 +292,9 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_dir", type=str, default="../data/model_checkpoints/",
                         help="log directory for Tensorboard log output")
     parser.add_argument("--n_files", type=int, default=2,
-                        help="semcor number of files")
-
+                        help="semcor number of files"),
+    parser.add_argument("--data_path", type=str, default="../data/preprocessed/fullcorpus.feather",
+                        help="Input data path")
     args = parser.parse_args()
 
     N_FILES = 5
@@ -302,7 +303,7 @@ if __name__ == "__main__":
     print()
     # ## Process Data
     print('Formatting corpus')
-    full_dataset = pd.read_feather('../../fullcorpus.feather')
+    full_dataset = pd.read_feather(args.data_path)
     unique_files = full_dataset.file.unique()
     np.random.shuffle(unique_files)
     # take N files out of dataset
