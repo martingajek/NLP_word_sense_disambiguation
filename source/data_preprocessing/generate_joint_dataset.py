@@ -1,5 +1,7 @@
+#!/usr/bin/env python
 from tqdm import tqdm
 import pandas as pd
+from tqdm import tqdm
 
 import wordnet_gloss_search as wgs
 import parse_semcor as pssc
@@ -10,11 +12,13 @@ def add_wordnet_gloss(_semcordf,verbose=True):
     Given a base semcor corpus dataframe generates gloss column for each word
     adds a corresponding to other glosses not relevant in each context
     """
-    if verbose: print('Adding wordnet glosses')
-    _semcordf['gloss']  = _semcordf.wn_index.apply(wgs.wordnet_get_gloss)
-    if verbose: print('Adding other wordnet glosses to semcor...',end="")
-    _semcordf['other_glosses']  = _semcordf.wn_index.apply(wgs.wordnet_get_other_glosses,{'select_name':True})
-    # number of other glosses gives an idea of the ambiguity of each word
+    #if verbose: print('Adding wordnet glosses')
+    tqdm.pandas(desc="Gloss preprocessing") 
+    _semcordf['gloss']  = _semcordf.wn_index.progress_apply(wgs.wordnet_get_gloss)
+    #if verbose: print('Adding other wordnet glosses to semcor...',end="")
+    tqdm.pandas(desc="Adding other glosses") 
+    _semcordf['other_glosses']  = _semcordf.wn_index.progress_apply(wgs.wordnet_get_other_glosses,{'select_name':True})
+    # number of other glosses gives an idea of the ambiguity of each word   
     _semcordf['other_glossesnum'] = _semcordf['other_glosses'].apply(len)
     if verbose: print('Done!')
 
@@ -68,7 +72,7 @@ def build_joint_dataset(_df):
 
 def build_joint_semcor_gloss_corpus(_basepath,verbose=True):
     """
-    Given filepath to base folder of semcor3.0 coprus containing the xml files
+    Given filepath to base folder of semcor3.0 corpus containing the xml files
     Parses corpus and generates joint sentence-context pairs from wordnet glosses    
     """
     
@@ -79,6 +83,16 @@ def build_joint_semcor_gloss_corpus(_basepath,verbose=True):
     if verbose: print('Done!')
     return final_corpus
 
-
+if __name__=='__main__':
+    from argparse import ArgumentParser
+    import os
+    parser = ArgumentParser(description='Process some integers.')
+    parser.add_argument('--fpath',  type=str, default='./data/raw/',
+                       help='File path to the semcor directory')    
+    parser.add_argument('--savepath',  type=str, default='./data/preprocessed/semcor_gloss.feather',
+                       help='save path to final semcor directory')                       
+    args = parser.parse_args()
+    final_corpus = build_joint_semcor_gloss_corpus(args.fpath)
+    final_corpus.to_feather(args.savepath)
 
 
