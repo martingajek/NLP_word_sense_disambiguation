@@ -150,7 +150,7 @@ def register_metrics(_criterion,
     F1.attach(_validation_eval_engine, 'F1') 
 
 
-def run(dtloader, epochs, lr,weight_decay_rate, log_interval=10, 
+def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10, 
         log_dir='../data/logs',model_checkpoint_dir='../data/model_checkpoints/'):
     """
     given dataloader (of TrainValDataloader class) for train, sample_validation, 
@@ -160,13 +160,13 @@ def run(dtloader, epochs, lr,weight_decay_rate, log_interval=10,
     trainig_log_interval = log_interval
     subset_validation_log_interval = log_interval
         
-    model = BertForWSD() 
+    
         
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     optimizer = get_set_optimizer(model,lr=lr,weight_decay_rate=weight_decay_rate)
     criterion = torch.nn.CrossEntropyLoss()
 
-    IE = Ignite_Engines(model,optimizer,criterion,device)
+    IE = Ignite_Engines(_model,optimizer,criterion,device)
     #IE.get_process_function()
     
     trainer = Engine(IE.get_process_function())
@@ -180,11 +180,11 @@ def run(dtloader, epochs, lr,weight_decay_rate, log_interval=10,
 
     if device.type == 'cuda':
         torch.cuda.empty_cache()
-        model.to(device)
+        _model.to(device)
 
     if log_dir:
         _run_logdir = get_new_run_directory(log_dir)
-        writer = create_summary_writer(model, dtloader.train_dataloader, _run_logdir, device)
+        writer = create_summary_writer(_model, dtloader.train_dataloader, _run_logdir, device)
 
     # Progress bar
     
@@ -193,7 +193,7 @@ def run(dtloader, epochs, lr,weight_decay_rate, log_interval=10,
 
     # register events
 
-    @trainer.on(Events.ITERATION_COMPLETED)
+    #@trainer.on(Events.ITERATION_COMPLETED)
     def log_training_loss(engine):
         iterations = (engine.state.iteration - 1) % len(dtloader.train_dataloader) + 1
         if iterations % trainig_log_interval == 0:
@@ -216,7 +216,7 @@ def run(dtloader, epochs, lr,weight_decay_rate, log_interval=10,
                 # Subset evaluation  metrics to be logged during training
                 writer.add_scalar("running_metrics/val_loss", val_loss, engine.state.iteration)
             
-    @trainer.on(Events.EPOCH_COMPLETED)
+    #@trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(engine):
         train_evaluator.run(dtloader.train_dataloader)
         metrics = train_evaluator.state.metrics
@@ -251,8 +251,10 @@ def run(dtloader, epochs, lr,weight_decay_rate, log_interval=10,
     # Events Handler (Sets when given events are happening)
     handler = EarlyStopping(patience=3, score_function=score_function, trainer=trainer)
     validation_evaluator.add_event_handler(Events.COMPLETED, handler)
-    trainer.add_event_handler(Events.EPOCH_COMPLETED, log_validation_results)
+    
+    trainer.add_event_handler(Events.ITERATION_COMPLETED, log_training_loss)
     trainer.add_event_handler(Events.ITERATION_COMPLETED, subset_validation_loss)
+    trainer.add_event_handler(Events.EPOCH_COMPLETED, log_training_results)
     trainer.add_event_handler(Events.EPOCH_COMPLETED, log_validation_results)
 
     # Checkpoints model/Adds event handler to trainer engine
@@ -266,7 +268,7 @@ def run(dtloader, epochs, lr,weight_decay_rate, log_interval=10,
     # kick everything off
     trainer.run(dtloader.train_dataloader, max_epochs=epochs)
 
-    writer.close()
+    if log_dir: writer.close()
 
 
 if __name__ == "__main__":
@@ -295,6 +297,12 @@ if __name__ == "__main__":
                         help="semcor number of files"),
     parser.add_argument("--data_path", type=str, default="../data/preprocessed/fullcorpus.feather",
                         help="Input data path")
+    parser.add_argument("--bert_model_type", type=str, default='bert-base-uncased',
+                        help="bert model: default is bert-base-uncased")
+    parser.add_argument("--bert_token_layer", type=str, default='token-cls',
+                        help="bert token layer type: default is token-cls")
+    parser.add_argument("--weak_supervision", type=bool, default=False,
+                        help="Enable context gloss weak supervision")
     args = parser.parse_args()
                         
 
@@ -303,6 +311,7 @@ if __name__ == "__main__":
     print('Running with {}'.format(args))
     print()
     # ## Process Data
+    
     print('Formatting corpus')
     full_dataset = pd.read_feather(args.data_path)
     unique_files = full_dataset.file.unique()
@@ -310,11 +319,15 @@ if __name__ == "__main__":
     # take N files out of dataset
     reduced_dataset = full_dataset[full_dataset.file.isin(unique_files[:args.n_files])]
     #reduced_dataset = full_dataset.sample(100)
-    df = preprocess_model_inputs(reduced_dataset,sample_size=None)
+    df = preprocess_model_inputs(reduced_dataset,sample_size=None,weak_supervision=args.weak_supervision)
     dl = TrainValDataloader(df,args.batch_size,val_sample_dataloader=True)    
     print()
+    
+    print('Instantiating model')  
+    model = BertForWSD(bert_model_type=args.bert_model_type,token_layer=args.bert_token_layer) 
+    print()
     print('Initiating training')
-    run(dl, args.epochs, args.lr,args.weight_decay, log_interval=args.log_interval, 
+    run(model, dl, args.epochs, args.lr,args.weight_decay, log_interval=args.log_interval, 
         log_dir=args.log_dir,model_checkpoint_dir=args.checkpoint_dir)
 
 
