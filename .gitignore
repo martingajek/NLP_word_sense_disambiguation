@@ -8,6 +8,7 @@
 *.feather
 *checkpoint.ipynb
 __pycache__/
+*.py[cod]
 .ipynb_checkpoints/
 notebooks/.ipynb_checkpoints/
 model_checkpoints/
