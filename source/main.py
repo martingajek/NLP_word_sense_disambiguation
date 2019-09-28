@@ -151,15 +151,15 @@ def register_metrics(_criterion,
 
 
 def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10, 
-        log_dir='../data/logs',model_checkpoint_dir='../data/model_checkpoints/'):
+        log_dir='../data/logs',model_checkpoint_dir='../data/model_checkpoints/',
+        log_info=None):
     """
     given dataloader (of TrainValDataloader class) for train, sample_validation, 
     and vallidation sets up model, optimier, criterion, metrics and log handlers and runs model.
     """
    
     trainig_log_interval = log_interval
-    subset_validation_log_interval = log_interval
-        
+    subset_validation_log_interval = log_interval       
     
         
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -185,6 +185,9 @@ def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10,
     if log_dir:
         _run_logdir = get_new_run_directory(log_dir)
         writer = create_summary_writer(_model, dtloader.train_dataloader, _run_logdir, device)
+        if log_info: # log all parameters
+            for k,v in log_info.items():
+                writer.add_text(k, '{}'.format(v), 0)
 
     # Progress bar
     
@@ -328,7 +331,7 @@ if __name__ == "__main__":
     print()
     print('Initiating training')
     run(model, dl, args.epochs, args.lr,args.weight_decay, log_interval=args.log_interval, 
-        log_dir=args.log_dir,model_checkpoint_dir=args.checkpoint_dir)
+        log_dir=args.log_dir,model_checkpoint_dir=args.checkpoint_dir,log_info=vars(args))
 
 
 
