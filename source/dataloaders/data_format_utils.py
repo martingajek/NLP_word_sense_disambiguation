@@ -27,21 +27,21 @@ def format_sentences_BERT(_row,weak_supervision=False):
     and appends [CLS] and [SEP] tags.   
     """
     if not weak_supervision:
-        return '[CLS] '+_row.loc['sent_full']+' [SEP] '+_row.loc['context']+' [SEP]'
-    return '[CLS] '+_row.loc['sent_full']+' [SEP] '+_row.loc['target_word']+': '+_row.loc['context']+' [SEP]'
+        return '[CLS] '+_row.loc['sent']+' [SEP] '+_row.loc['gloss']+' [SEP]'
+    return '[CLS] '+_row.loc['sent']+' [SEP] '+_row.loc['target_word']+': '+_row.loc['gloss']+' [SEP]'
 
 
 
-def tokenize_and_index(_df,output_len=MAX_LEN,tokenizer=DEF_TOKENIZER,weak_supervision=False,display_progress = True):
+def tokenize_and_index(_df,output_len=MAX_LEN,tokenizer=DEF_TOKENIZER,
+                       weak_supervision=False,display_progress = True):
     """
     Given corpus dataframe with one sentence per row as well as target word and definition
     preprocesses input sentence (adds start/sep tokens and appends context) then
-    tokenizes both input and target word in the dataframe and converts each tokenized sentence 
-    to input_id tensor. Generates padded input column for the input_id tensor (with trailing zeros)
-    
+    tokenizes both input and target word in the dataframe and converts each tokenized sentence
+    to input_id tensor. Generates padded input column for the input_id tensor (with trailing zeros)    
     """
-    
-    
+   
+   
     tqdm.pandas(desc="Sentence preprocessing")    
     _df.loc[:,'preproc_sent'] = _df.progress_apply(format_sentences_BERT,axis=1,weak_supervision=weak_supervision)
     tqdm.pandas(desc="Sentence Tokenization")
@@ -52,7 +52,7 @@ def tokenize_and_index(_df,output_len=MAX_LEN,tokenizer=DEF_TOKENIZER,weak_super
     _df.loc[:,'input_ids'] = _df.tokenized_sent.progress_apply(tokenizer.convert_tokens_to_ids)
     
     padded_input_ids = pad_sequences(_df['input_ids'], 
-                                     maxlen=output_len, dtype="long",padding = "post", truncating = "post")
+                                    maxlen=output_len, dtype="long",padding = "post", truncating = "post")
     _df.loc[:,'input_ids'] = np.split(padded_input_ids, _df.shape[0], axis=0)
     
     
@@ -63,7 +63,9 @@ def gen_sentence_indexes(_df,output_len=MAX_LEN):
     """
     
     def get_index_of_sep(_row):
-        # Get index of sep token and generate sentence index array
+        """
+        Get index of sep token and generate sentence index array
+        """ 
         _index_sep_tokens = [i for i,word  in enumerate(_row['tokenized_sent']) \
                            if word == '[SEP]']
         _sentence_indexes = np.array([0]*(_index_sep_tokens[0]+1)\
