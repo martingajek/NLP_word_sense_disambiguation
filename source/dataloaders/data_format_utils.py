@@ -91,7 +91,7 @@ def find_index_of_target_token(_df):
 
 
 
-def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,output_len=MAX_LEN):
+def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,output_len=MAX_LEN,weak_supervision=False):
     """
     given preprocessed corpus dataframe tokenizes and creates the embeddings for
     input for the tranformer model. Furthermore it filters bad rows where the index
@@ -102,7 +102,7 @@ def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,output_len
     if sample_size:
         _smpldf = _df.sample(sample_size)
     
-    tokenize_and_index(_smpldf,output_len=output_len)
+    tokenize_and_index(_smpldf,output_len=output_len,weak_supervision=weak_supervision)
     gen_sentence_indexes(_smpldf,output_len=output_len)
     find_index_of_target_token(_smpldf)
     
