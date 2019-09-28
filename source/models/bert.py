@@ -33,7 +33,7 @@ class BertForWSD(nn.Module):
         # Define which token selection layer to use
         if token_layer == 'token-cls':
             self.tokenselectlayer = TokenClsLayer()
-        elif token_layer in ['sent-cls','Sent-cls-ws']:
+        elif token_layer in ['sent-cls','sent-cls-ws']:
             self.tokenselectlayer = SentClsLayer()
         else:
             raise ValueError("Unidentified parameter for token selection layer")       
