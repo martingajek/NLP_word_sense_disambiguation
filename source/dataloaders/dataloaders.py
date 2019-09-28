@@ -33,9 +33,15 @@ class TrainValDataloader():
      the inputs are the fully sense-tagged tokenized and indexed corpus dataframe
      as well as a batch size
 
+    other arguments to dataloaders:
+    when pin_memory is True (it is used in conjunction with CUDA) to speed up memory transfer and
+    increase GPU utilization
+    num_workers same as pytorch dataloader class, num cpus
+
     the class exposes 2 dataloaders, namely the train_dataloader and val_dataloader    
     """
-    def __init__(self, data, batch_size, test_size=0.2, val_sample_dataloader=False, val_sample_size=0.1):
+    def __init__(self, data, batch_size, test_size=0.2, val_sample_dataloader=False, 
+                 val_sample_size=0.1,**kwargs):
         self.batch_size = batch_size
         data_subset = data[['input_ids','sent_indexes',
                             'target_token_idx','is_proper_context']]
@@ -51,7 +57,7 @@ class TrainValDataloader():
         
         self.train_dataloader = DataLoader(self.train_dataset, 
                                            sampler=self.train_sampler, 
-                                           batch_size=self.batch_size)
+                                           batch_size=self.batch_size,**kwargs)
     
         self.val_dataloader = DataLoader(self.val_dataset, 
                                          sampler=self.val_sampler, 

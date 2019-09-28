@@ -26,19 +26,21 @@ from dataloaders.dataloaders import TrainValDataloader
 
 class Ignite_Engines():
     """
-    wraps around and Instantiates several pytorch ignite functions    
+    wraps around and Instantiates several pytorch ignite functions,
+    non_blocking argument is used to speed up memory transfer when using gpu 
     """
-    def __init__(self,_model, _optimizer,_criterion,_device):
+    def __init__(self,_model, _optimizer,_criterion,_device,non_blocking=False):
         self.model = _model
         self.optimizer = _optimizer
         self.criterion = _criterion
         self.device = _device
+        self.non_blocking=non_blocking
 
     def get_process_function(self):
         def process_function(engine, batch):
             self.model.train()
             self.optimizer.zero_grad()
-            batch = (tens.to(self.device) for tens in batch)
+            batch = (tens.to(self.device,non_blocking=self.non_blocking) for tens in batch)
             b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
             y_pred = self.model(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
             loss = self.criterion(y_pred, y)
@@ -51,7 +53,7 @@ class Ignite_Engines():
         def eval_function(engine, batch):
             self.model.eval()
             with torch.no_grad():
-                batch = (tens.to(self.device) for tens in batch)
+                batch = (tens.to(self.device,non_blocking=self.non_blocking) for tens in batch)
                 b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
                 y_pred = self.model(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
                 return y_pred, y
@@ -152,7 +154,7 @@ def register_metrics(_criterion,
 
 def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10, 
         log_dir='../data/logs',model_checkpoint_dir='../data/model_checkpoints/',
-        log_info=None):
+        log_info=None,optimize_gpu_mem=False):
     """
     given dataloader (of TrainValDataloader class) for train, sample_validation, 
     and vallidation sets up model, optimier, criterion, metrics and log handlers and runs model.
@@ -166,7 +168,7 @@ def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10,
     optimizer = get_set_optimizer(model,lr=lr,weight_decay_rate=weight_decay_rate)
     criterion = torch.nn.CrossEntropyLoss()
 
-    IE = Ignite_Engines(_model,optimizer,criterion,device)
+    IE = Ignite_Engines(_model,optimizer,criterion,device,non_blocking=optimize_gpu_mem)
     #IE.get_process_function()
     
     trainer = Engine(IE.get_process_function())
@@ -306,6 +308,10 @@ if __name__ == "__main__":
                         help="bert token layer type: default is token-cls")
     parser.add_argument("--weak_supervision", type=bool, default=False,
                         help="Enable context gloss weak supervision")
+    parser.add_argument("--optimize_gpu_mem", type=bool, default=False,
+                        help="Enable non_blocking argument in pytorch to speedup GPU memory transfers")
+    parser.add_argument("--num_workers", type=int, default=0,
+                        help="Enable non_blocking argument in pytorch to speedup GPU memory transfers")
     args = parser.parse_args()
                         
 
@@ -323,7 +329,8 @@ if __name__ == "__main__":
     reduced_dataset = full_dataset[full_dataset.file.isin(unique_files[:args.n_files])]
     #reduced_dataset = full_dataset.sample(100)
     df = preprocess_model_inputs(reduced_dataset,sample_size=None,weak_supervision=args.weak_supervision)
-    dl = TrainValDataloader(df,args.batch_size,val_sample_dataloader=True)    
+    dl = TrainValDataloader(df,args.batch_size,val_sample_dataloader=True,
+                            pin_memory=args.optimize_gpu_mem,num_workers=args.num_workers)    
     print()
     
     print('Instantiating model')  
