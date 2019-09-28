@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from models.token_layers import TokenClsLayer, SentClsLayer
 
+
 class BertForWSD(nn.Module):
     """     
     Base BERT model with a token selection layer and a binary classifier layer

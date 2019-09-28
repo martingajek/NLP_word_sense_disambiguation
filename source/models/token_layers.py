@@ -43,7 +43,7 @@ class SentClsFunction(Function):
     
     @staticmethod
     def backward(ctx, grad_output):
-        input = ctx.saved_tensors
+        input, = ctx.saved_tensors
         grad = zeros_like(input)
         # gradient only flows only to indexes 0 of target tensor
         # index corresponding to [CLS] token
@@ -85,4 +85,4 @@ class SentClsLayer(nn.Module):
         Passing 1 tensors, namely the output or the last hidden state from the transformer model
         """
         
-        return self.scf(features,token_indexes)
+        return self.scf(features)
