@@ -18,57 +18,10 @@ from ignite.handlers import ModelCheckpoint, EarlyStopping
 from ignite.contrib.handlers import ProgressBar
 # Custom modules
 from models.bert import BertForWSD
-from dataloaders.data_format_utils import preprocess_model_inputs
-from dataloaders.dataloaders import TrainValDataloader, TrainValSplitDataloader
 
+from dataloaders.dataloader_utils import gen_dataloader
+from ignite_extras.helper_classes import Ignite_Engines
 
-# Def Main pytorch-ignite evaluation functions
-
-class Ignite_Engines():
-    """
-    wraps around and Instantiates several pytorch ignite functions,
-    non_blocking argument is used to speed up memory transfer when using gpu 
-    """
-    def __init__(self,_model, _optimizer,_criterion,_device,non_blocking=False):
-        self.model = _model
-        self.optimizer = _optimizer
-        self.criterion = _criterion
-        self.device = _device
-        self.non_blocking=non_blocking
-
-    def get_process_function(self):
-        def process_function(engine, batch):
-            self.model.train()
-            self.optimizer.zero_grad()
-            batch = (tens.to(self.device,non_blocking=self.non_blocking) for tens in batch)
-            b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
-            y_pred = self.model(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
-            loss = self.criterion(y_pred, y)
-            loss.backward()
-            self.optimizer.step()
-            return loss.item()
-        return process_function
-
-    def get_eval_function(self):
-        def eval_function(engine, batch):
-            self.model.eval()
-            with torch.no_grad():
-                batch = (tens.to(self.device,non_blocking=self.non_blocking) for tens in batch)
-                b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
-                y_pred = self.model(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
-                return y_pred, y
-        return eval_function
-        
-    def get_subset_eval_function(self):
-        eval_function = self.get_eval_function()
-
-        def subset_eval_function(engine, batch):
-            """ Function ot be run on validation subset during the training process """
-            y_pred, y = eval_function(engine, batch)
-            with torch.no_grad():
-                loss = self.criterion(y_pred, y)
-                return loss.item()
-        return subset_eval_function
 
 def score_function(engine):
     val_loss = engine.state.metrics['bce']
@@ -280,6 +233,10 @@ if __name__ == "__main__":
 
 
     parser = ArgumentParser()
+    parser.add_argument("--data_path", type=str, default="../data/preprocessed/fullcorpus.feather",
+                        help="Input data path")
+    parser.add_argument("--test_data_path", type=str, default="",
+                        help="Input test data path")
     parser.add_argument('--batch_size', type=int, default=16,
                         help='input batch size for training (default: 64)')
     #parser.add_argument('--val_batch_size', type=int, default=1000,
@@ -300,8 +257,6 @@ if __name__ == "__main__":
                         help="log directory for Tensorboard log output")
     parser.add_argument("--n_files", type=int, default=2,
                         help="semcor number of files"),
-    parser.add_argument("--data_path", type=str, default="../data/preprocessed/fullcorpus.feather",
-                        help="Input data path")
     parser.add_argument("--bert_model_type", type=str, default='bert-base-uncased',
                         help="bert model: default is bert-base-uncased")
     parser.add_argument("--bert_token_layer", type=str, default='token-cls',
@@ -314,23 +269,19 @@ if __name__ == "__main__":
                         help="Enable non_blocking argument in pytorch to speedup GPU memory transfers")
     args = parser.parse_args()
                         
-
-    N_FILES = 5
-           
+             
     print('Running with {}'.format(args))
     print()
     # ## Process Data
-    
-    print('Formatting corpus')
-    full_dataset = pd.read_feather(args.data_path)
-    unique_files = full_dataset.file.unique()
-    np.random.shuffle(unique_files)
-    # take N files out of dataset
-    reduced_dataset = full_dataset[full_dataset.file.isin(unique_files[:args.n_files])]
-    #reduced_dataset = full_dataset.sample(100)
-    df = preprocess_model_inputs(reduced_dataset,sample_size=None,weak_supervision=args.weak_supervision)
-    dl = TrainValSplitDataloader(df,args.batch_size,val_sample_dataloader=True,
-                            pin_memory=args.optimize_gpu_mem,num_workers=args.num_workers)    
+    print('Preprocessing data')      
+    dl = gen_dataloader(args.data_path,args.test_data_path,args.batch_size,
+                        sample_size=None,
+                        weak_supervision=args.weak_supervision,
+                        val_sample_dataloader=True,
+                        pin_memory=args.optimize_gpu_mem,
+                        num_workers=args.num_workers,
+                        tokenizer_type = args.bert_model_type,              
+                        )
     print()
     
     print('Instantiating model')  
