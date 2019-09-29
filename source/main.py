@@ -19,7 +19,7 @@ from ignite.contrib.handlers import ProgressBar
 # Custom modules
 from models.bert import BertForWSD
 from dataloaders.data_format_utils import preprocess_model_inputs
-from dataloaders.dataloaders import TrainValDataloader
+from dataloaders.dataloaders import TrainValDataloader, TrainValSplitDataloader
 
 
 # Def Main pytorch-ignite evaluation functions
@@ -329,7 +329,7 @@ if __name__ == "__main__":
     reduced_dataset = full_dataset[full_dataset.file.isin(unique_files[:args.n_files])]
     #reduced_dataset = full_dataset.sample(100)
     df = preprocess_model_inputs(reduced_dataset,sample_size=None,weak_supervision=args.weak_supervision)
-    dl = TrainValDataloader(df,args.batch_size,val_sample_dataloader=True,
+    dl = TrainValSplitDataloader(df,args.batch_size,val_sample_dataloader=True,
                             pin_memory=args.optimize_gpu_mem,num_workers=args.num_workers)    
     print()
     
