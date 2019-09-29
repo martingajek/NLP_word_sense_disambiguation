@@ -16,4 +16,4 @@ cd ../../
 echo " "
 echo "Building dataset"
 
-python  $PWD/source/data_preprocessing/en_semcor3_wordnet/generate_joint_dataset.py --fpath=$PWD/data/raw/semcor3.0
+python  $PWD/source/data_preprocessing/en_semcor3_wordnet/generate_dataset.py --fpath=$PWD/data/raw/semcor3.0
