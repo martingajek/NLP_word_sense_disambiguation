@@ -93,7 +93,8 @@ def find_index_of_target_token(_df):
 
 
 
-def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,output_len=MAX_LEN,weak_supervision=False):
+def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,
+                            output_len=MAX_LEN,weak_supervision=False,tokenizer=DEF_TOKENIZER):
     """
     given preprocessed corpus dataframe tokenizes and creates the embeddings for
     input for the tranformer model. Furthermore it filters bad rows where the index
@@ -104,11 +105,14 @@ def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,output_len
     if sample_size:
         _smpldf = _df.sample(sample_size)
     
-    tokenize_and_index(_smpldf,output_len=output_len,weak_supervision=weak_supervision)
+    tokenize_and_index(_smpldf,output_len=output_len,weak_supervision=weak_supervision,
+                       tokenizer=tokenizer)
     gen_sentence_indexes(_smpldf,output_len=output_len)
     find_index_of_target_token(_smpldf)
-    
-    if filter_bad_rows: # rows where the target word index exceeds tensor size 
+
+        
+    if filter_bad_rows: # rows where the target word index is not found due to cutoff or exceeds tensor size 
+        _smpldf = _smpldf[_smpldf.target_token_idx.apply(lambda x: len(x) !=  0)]
         _smpldf = _smpldf[_smpldf.target_token_idx.apply(lambda x: x[0] <  output_len)]
 
     
