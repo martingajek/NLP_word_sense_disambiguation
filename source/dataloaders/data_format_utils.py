@@ -94,7 +94,8 @@ def find_index_of_target_token(_df):
 
 
 def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,
-                            output_len=MAX_LEN,weak_supervision=False,tokenizer=DEF_TOKENIZER):
+                            output_len=MAX_LEN,weak_supervision=False,
+                            tokenizer=DEF_TOKENIZER,**kwargs):
     """
     given preprocessed corpus dataframe tokenizes and creates the embeddings for
     input for the tranformer model. Furthermore it filters bad rows where the index

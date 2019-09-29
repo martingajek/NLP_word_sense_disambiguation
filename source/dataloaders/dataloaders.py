@@ -26,10 +26,10 @@ class TrainValDataloader():
     """
     Class exposing train and validation dataloaders.
     each dataloader outputs 4 tensors:
-     - the tensor of input token encodings
-     - Sentence encoding tensor (1 and 0's)
-     - Tensor of target token indexes
-     - Binary label tensor
+    - the tensor of input token encodings
+    - Sentence encoding tensor (1 and 0's)
+    - Tensor of target token indexes
+    - Binary label tensor
 
      the inputs are the fully sense-tagged tokenized and indexed corpus dataframe
      split in train data and test data. WHen  val_sample_dataloader is True
@@ -70,7 +70,9 @@ class TrainValDataloader():
         if val_sample_dataloader:
             num_samples = int(len(self.val_dataset)*val_sample_size)
             assert num_samples > 0, "Number of samples for validation sample dataloader is 0, increase val_sample_size fraction" 
-            self.subset_val_sampler = RandomSampler(self.val_dataset,num_samples=num_samples,replacement=True,)
+            self.subset_val_sampler = RandomSampler(self.val_dataset,
+                                                    num_samples=num_samples,
+                                                    replacement=True,)
             self.subset_val_dataloader = DataLoader(self.val_dataset, 
                                                  sampler=self.subset_val_sampler, 
                                                  batch_size=self.batch_size)
@@ -81,10 +83,10 @@ class TrainValSplitDataloader(TrainValDataloader):
     """
     Class exposing train and validation dataloaders.
     each dataloader outputs 4 tensors:
-     - the tensor of input token encodings
-     - Sentence encoding tensor (1 and 0's)
-     - Tensor of target token indexes
-     - Binary label tensor
+    - the tensor of input token encodings
+    - Sentence encoding tensor (1 and 0's)
+    - Tensor of target token indexes
+    - Binary label tensor
 
      the inputs are the fully sense-tagged tokenized and indexed corpus dataframe
      as well as a batch size
