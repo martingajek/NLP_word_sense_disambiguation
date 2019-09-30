@@ -26,7 +26,9 @@ def read_data_to_dataframe(_path,**kwargs):
         raise ValueError('File in wrong file format')
 
 
-def gen_dataloader(_train_path,_test_path,batch_size,tokenizer_type='bert-base-uncased',**kwargs):
+def gen_dataloader(_train_path,_test_path,batch_size,
+                   preprocess_inputs = False,
+                   tokenizer_type='bert-base-uncased',**kwargs):
     """
     Helper function that takes either just the train data path or both
     train and test data an outputs the appropriate dataloader instance
@@ -46,10 +48,16 @@ def gen_dataloader(_train_path,_test_path,batch_size,tokenizer_type='bert-base-u
     """
     tokenizer = BertTokenizer.from_pretrained(tokenizer_type)
     train_dataset = read_data_to_dataframe(_train_path)
-    df_train = preprocess_model_inputs(train_dataset,tokenizer=tokenizer,**kwargs)
+    if preprocess_inputs:
+        df_train = preprocess_model_inputs(train_dataset,tokenizer=tokenizer,**kwargs)
+    else:
+        df_train = train_dataset
     if test_path:
         test_dataset = read_data_to_dataframe(_test_path)        
-        df_test = preprocess_model_inputs(test_dataset,tokenizer=tokenizer,**kwargs)
+        if preprocess_inputs:
+            df_test = preprocess_model_inputs(test_dataset,tokenizer=tokenizer,**kwargs)
+        else:
+            df_test = test_dataset
         dl = TrainValDataloader(df_train,df_test,batch_size,**kwargs)
         return dl
      

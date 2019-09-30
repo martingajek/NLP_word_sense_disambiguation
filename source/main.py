@@ -269,6 +269,8 @@ if __name__ == "__main__":
                         help="Enable non_blocking argument in pytorch to speedup GPU memory transfers")
     parser.add_argument("--num_workers", type=int, default=0,
                         help="Enable non_blocking argument in pytorch to speedup GPU memory transfers")
+    parser.add_argument("--preprocess_inputs", type=bool, default=False,
+                        help="Preprocess input data (Tokenize and generate input embeddings)")
     args = parser.parse_args()
                         
              
@@ -277,6 +279,7 @@ if __name__ == "__main__":
     # ## Process Data
     print('Preprocessing data')      
     dl = gen_dataloader(args.data_path,args.test_data_path,args.batch_size,
+                        preprocess_inputs=args.preprocess_inputs,
                         sample_size=None,
                         weak_supervision=args.weak_supervision,
                         val_sample_dataloader=True,
