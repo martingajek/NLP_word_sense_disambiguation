@@ -18,6 +18,7 @@ from ignite.handlers import ModelCheckpoint, EarlyStopping
 from ignite.contrib.handlers import ProgressBar
 # Custom modules
 from models.bert import BertForWSD
+from models.xlnet import XLNetForWSD
 
 from dataloaders.dataloader_utils import gen_dataloader
 from ignite_extras.helper_classes import Ignite_Engines
@@ -218,9 +219,9 @@ def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10,
     # Checkpoints model/Adds event handler to trainer engine
     if model_checkpoint_dir:
         model_checkpoint_path = get_new_run_directory(model_checkpoint_dir)
-        checkpointer = ModelCheckpoint(model_checkpoint_path, 'bertWSD', save_interval=1, n_saved=2, 
+        checkpointer = ModelCheckpoint(model_checkpoint_path, 'ModelWSD', save_interval=1, n_saved=2, 
                                     create_dir=True, save_as_state_dict=True,require_empty=False)
-        trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'bertWSD': model})
+        trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'ModelWSD': model})
 
 
     # kick everything off
@@ -257,7 +258,8 @@ if __name__ == "__main__":
                         help="log directory for Tensorboard log output")
     parser.add_argument("--n_files", type=int, default=2,
                         help="semcor number of files"),
-    parser.add_argument("--bert_model_type", type=str, default='bert-base-uncased',
+    parser.add_argument("--model", type=str, default='bert') # can be xlnet as well
+    parser.add_argument("--model_type", type=str, default='bert-base-uncased',
                         help="bert model: default is bert-base-uncased")
     parser.add_argument("--bert_token_layer", type=str, default='token-cls',
                         help="bert token layer type: default is token-cls")
@@ -285,7 +287,12 @@ if __name__ == "__main__":
     print()
     
     print('Instantiating model')  
-    model = BertForWSD(bert_model_type=args.bert_model_type,token_layer=args.bert_token_layer) 
+    if args.model.lower() == 'bert':
+        model = BertForWSD(model_type=args.model_type,token_layer=args.bert_token_layer) 
+    elif args.model.lower() == 'xlnet':
+        model = XLNetWSD(model_type=args.model_type,token_layer=args.bert_token_layer) 
+    else:
+        raise ValueError('Model does not exist or is not implemented')
     print()
     print('Initiating training')
     run(model, dl, args.epochs, args.lr,args.weight_decay, log_interval=args.log_interval, 

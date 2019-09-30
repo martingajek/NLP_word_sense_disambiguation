@@ -1,13 +1,13 @@
-from pytorch_transformers import BertModel, BertConfig
+from pytorch_transformers import XLNetModel, XLNetConfig
 import torch
 from torch import nn
 from models.token_layers import TokenClsLayer, SentClsLayer
 
 
-class BertForWSD(nn.Module):
+class XLNetForWSD(nn.Module):
     """     
-    Base BERT model with a token selection layer and a binary classifier layer
-    for bert_model_type refer to https://github.com/huggingface/pytorch-transformers  
+    Base XLNet model with a token selection layer and a binary classifier layer
+    for model_type refer to https://github.com/huggingface/pytorch-transformers  
     
     for the token_layer token layer parameter there are three possible choices:
     
@@ -18,15 +18,15 @@ class BertForWSD(nn.Module):
     this is inspired from https://arxiv.org/pdf/1908.07245.pdf
     
     
-    """
+    """ 
   
-    def __init__(self, num_labels=2, model_type='bert-base-uncased',token_layer='token-cls',output_logits=True):
-        super(BertForWSD, self).__init__()
+    def __init__(self, num_labels=2, model_type='xlnet-base-cased',token_layer='token-cls',output_logits=True):
+        super(XLNetForWSD, self).__init__()
         
-        self.config = BertConfig()
+        self.config = XLNetConfig()
         self.token_layer = token_layer
         self.num_labels = 2
-        self.bert = BertModel.from_pretrained(bert_model_type)
+        self.xlnet = XLNetModel.from_pretrained(model_type)
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
         self.output_logits = output_logits
         
@@ -46,7 +46,7 @@ class BertForWSD(nn.Module):
     
     def forward(self, _tokens_tensor, _sentence_tensor, _target_token_ids):
         
-        _encoded_layers, _ = self.bert(_tokens_tensor, _sentence_tensor)
+        _encoded_layers, _ = self.xlnet(_tokens_tensor, _sentence_tensor)
         #print(_encoded_layers)
         # One token selection layer takes 2 imputs otherwise takes only one
         
