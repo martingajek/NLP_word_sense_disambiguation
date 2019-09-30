@@ -26,7 +26,7 @@ class BertForWSD(nn.Module):
         self.config = BertConfig()
         self.token_layer = token_layer
         self.num_labels = 2
-        self.bert = BertModel.from_pretrained(bert_model_type)
+        self.bert = BertModel.from_pretrained(model_type)
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
         self.output_logits = output_logits
         

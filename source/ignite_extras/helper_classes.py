@@ -2,6 +2,8 @@
 # coding: utf-8
 ## Pytorch ignite helper classes
 
+import torch
+
 class Ignite_Engines():
     """
     wraps around and Instantiates several pytorch ignite functions,
