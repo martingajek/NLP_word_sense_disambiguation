@@ -285,7 +285,7 @@ if __name__ == "__main__":
                         val_sample_dataloader=True,
                         pin_memory=args.optimize_gpu_mem,
                         num_workers=args.num_workers,
-                        tokenizer_type = args.bert_model_type,              
+                        tokenizer_type = args.model_type,              
                         )
     print()
     
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     if args.model.lower() == 'bert':
         model = BertForWSD(model_type=args.model_type,token_layer=args.token_layer) 
     elif args.model.lower() == 'xlnet':
-        model = XLNetWSD(model_type=args.model_type,token_layer=args.token_layer) 
+        model = XLNetForWSD(model_type=args.model_type,token_layer=args.token_layer) 
     else:
         raise ValueError('Model does not exist or is not implemented')
     print()
