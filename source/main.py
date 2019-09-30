@@ -261,7 +261,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, default='bert') # can be xlnet as well
     parser.add_argument("--model_type", type=str, default='bert-base-uncased',
                         help="bert model: default is bert-base-uncased")
-    parser.add_argument("--bert_token_layer", type=str, default='token-cls',
+    parser.add_argument("--token_layer", type=str, default='token-cls',
                         help="bert token layer type: default is token-cls")
     parser.add_argument("--weak_supervision", type=bool, default=False,
                         help="Enable context gloss weak supervision")
@@ -291,9 +291,9 @@ if __name__ == "__main__":
     
     print('Instantiating model')  
     if args.model.lower() == 'bert':
-        model = BertForWSD(model_type=args.model_type,token_layer=args.bert_token_layer) 
+        model = BertForWSD(model_type=args.model_type,token_layer=args.token_layer) 
     elif args.model.lower() == 'xlnet':
-        model = XLNetWSD(model_type=args.model_type,token_layer=args.bert_token_layer) 
+        model = XLNetWSD(model_type=args.model_type,token_layer=args.token_layer) 
     else:
         raise ValueError('Model does not exist or is not implemented')
     print()
