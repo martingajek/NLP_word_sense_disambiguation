@@ -82,6 +82,21 @@ def build_joint_semcor_gloss_corpus(_basepath,verbose=True):
     if verbose: print('Done!')
     return final_corpus
 
+def build_joint_senseval_gloss_corpus(_basepath,verbose=True):
+    """
+    Given filepath to base folder of senseval 2007 task 17 corpus containing the xml files
+    Parses corpus and generates joint context-gloss pairs from wordnet glosses    
+    """
+    
+    senseval_corpus_df = pssc.build_semcor_corpus(_basepath,verbose=verbose)
+    ## removes artefact in wordnet ref number
+    senseval_corpus_df['wn_index'] = senseval_corpus_df['wn_index'].str.split('%').apply(lambda x:'%'.join(x[1:]))
+    add_wordnet_gloss(senseval_corpus_df,verbose=verbose)
+    if verbose: print('Processing adn labeling joint cintext-gloss pairs...',end="")
+    final_corpus = build_joint_dataset(senseval_corpus_df)
+    if verbose: print('Done!')
+    return final_corpus
+
 if __name__=='__main__':
     from argparse import ArgumentParser
     import os

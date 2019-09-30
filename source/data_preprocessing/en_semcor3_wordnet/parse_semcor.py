@@ -2,6 +2,7 @@ import os,glob,pathlib
 import pandas as pd
 import xml.etree.ElementTree as ET
 from tqdm import tqdm
+import ipdb
 
 ##################################################################
 #	 Methods to preprocess semcor corpus from its underlying xml 
@@ -53,7 +54,12 @@ def gen_semcor_file_list(_basepath,ext='*.naf'):
     """
     
     file_list = []
-    for fileref in glob.glob(os.path.join(_basepath,'**',ext)): #search recursively for files
+    fla = glob.glob(os.path.join(_basepath,ext))
+    flb = glob.glob(os.path.join(_basepath,'*',ext))
+    flc = glob.glob(os.path.join(_basepath,'**',ext))
+    files = set(fla+flb+flc)
+    
+    for fileref in files: #search recursively for files
         parent_folder_name = pathlib.Path(fileref).parent.name
         file_name = pathlib.Path(fileref).name.split('.')[0]
         
