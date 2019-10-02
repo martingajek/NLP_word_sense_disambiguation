@@ -4,7 +4,16 @@
 *.pc
 *.pyc
 *.pyo
-__pycache__
+*.naf
+*.feather
+*checkpoint.ipynb
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+model_checkpoints/
+
+logs/
 
 *.com
 *.class
@@ -41,3 +50,8 @@ __pycache__
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+.vscode/
+# tensorflow log files
+events.out.* 
+src/pip-delete-this-directory.txt
