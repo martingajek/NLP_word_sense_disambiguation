@@ -66,9 +66,9 @@ def gen_dataloader(_train_path,_test_path,batch_size,
             df_test = preprocess_model_inputs(test_dataset,tokenizer=tokenizer,**kwargs)
         else:
             df_test = test_dataset
-        dl = TrainValDataloader(df_train,df_test,batch_size,**kwargs)
+        dl = TrainValDataloader(df_train,df_test,batch_size,kwargs)
         return dl
      
     
-    dl = TrainValSplitDataloader(df_train,batch_size,**kwargs)
+    dl = TrainValSplitDataloader(df_train,batch_size,kwargs)
     return dl    
