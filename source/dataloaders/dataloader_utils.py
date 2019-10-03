@@ -28,7 +28,7 @@ def read_data_to_dataframe(_path,**kwargs):
 
 def gen_dataloader(_train_path,_test_path,batch_size,
                    preprocess_inputs = False,
-                   tokenizer_type='bert-base-uncased',**kwargs):
+                   tokenizer_type='bert-base-uncased',input_len=128,**kwargs):
     """
     Helper function that takes either just the train data path or both
     train and test data an outputs the appropriate dataloader instance
@@ -56,7 +56,7 @@ def gen_dataloader(_train_path,_test_path,batch_size,
     
     train_dataset = read_data_to_dataframe(_train_path)
     if preprocess_inputs:
-        df_train = preprocess_model_inputs(train_dataset,tokenizer=tokenizer,**kwargs)
+        df_train = preprocess_model_inputs(train_dataset,tokenizer=tokenizer,output_len=input_len,**kwargs)
     else:
         df_train = train_dataset
     

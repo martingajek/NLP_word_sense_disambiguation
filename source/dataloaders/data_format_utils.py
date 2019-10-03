@@ -75,7 +75,7 @@ def gen_sentence_indexes(_df,output_len=MAX_LEN):
     tqdm.pandas(desc="Indexing sentences") 
     _df.loc[:,'sent_indexes'] = _df.progress_apply(get_index_of_sep,axis=1)
     padded_sent_idx = pad_sequences(_df['sent_indexes'],
-                                               maxlen=MAX_LEN, dtype="long",
+                                               maxlen=output_len, dtype="long",
                                                padding = "post", truncating = "post",value=1)
     _df.loc[:,'sent_indexes'] = np.split(padded_sent_idx, _df.shape[0], axis=0)
     
