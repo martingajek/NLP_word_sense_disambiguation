@@ -104,9 +104,14 @@ if __name__=='__main__':
     parser.add_argument('--fpath',  type=str, default='./data/raw/',
                        help='File path to the semcor directory')    
     parser.add_argument('--savepath',  type=str, default='./data/preprocessed/semcor_gloss.feather',
+                       help='save path to final semcor directory')
+    parser.add_argument('--semcor',  type=bool, default=True,
                        help='save path to final semcor directory')                       
     args = parser.parse_args()
-    final_corpus = build_joint_semcor_gloss_corpus(args.fpath)
+    if args.semcor:
+        final_corpus = build_joint_semcor_gloss_corpus(args.fpath)
+    else:
+        final_corpus = build_joint_senseval_gloss_corpus(args.fpath)
     final_corpus.to_feather(args.savepath)
 
 
