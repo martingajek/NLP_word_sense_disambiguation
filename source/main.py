@@ -22,6 +22,8 @@ from models.xlnet import XLNetForWSD
 
 from dataloaders.dataloader_utils import gen_dataloader
 from ignite_extras.helper_classes import Ignite_Engines
+from ignite_extras.utils import gen_random_str, get_new_run_directory
+
 
 
 def score_function(engine):
@@ -42,19 +44,7 @@ def create_summary_writer(model, data_loader, log_dir, device):
         print("Failed to save model graph: {}".format(e))
     return writer
 
-def get_new_run_directory(_logpath):
-    """ Given log path returns new run directory path """
-    if os.path.exists(_logpath):
-        _listdirs = [int(d.split('run')[1]) for d in os.listdir(_logpath) if  str.startswith(d,'run')]
-        _listdirs.sort()
-        num = 0
-        if _listdirs:
-            num = _listdirs[-1]
-        _new_run_directory = os.path.join(_logpath,'run{}'.format(num+1))
-    else:
-        _new_run_directory = os.path.join(_logpath,'run0')
-        os.makedirs(_new_run_directory)
-    return _new_run_directory
+
 
 def get_set_optimizer(_model,lr=2e-5,weight_decay_rate=0.1):
     #optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-3)
@@ -113,14 +103,16 @@ def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10,
     given dataloader (of TrainValDataloader class) for train, sample_validation, 
     and vallidation sets up model, optimier, criterion, metrics and log handlers and runs model.
     """
-   
+    runidstr = gen_random_str()
     trainig_log_interval = log_interval
     subset_validation_log_interval = log_interval       
     
         
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     optimizer = get_set_optimizer(model,lr=lr,weight_decay_rate=weight_decay_rate)
-    criterion = torch.nn.CrossEntropyLoss()
+    
+    weight = torch.FloatTensor([1.0,1.0]).to(device)
+    criterion = torch.nn.CrossEntropyLoss(weight=weight)
 
     IE = Ignite_Engines(_model,optimizer,criterion,device,non_blocking=optimize_gpu_mem)
     #IE.get_process_function()
@@ -139,7 +131,7 @@ def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10,
         _model.to(device)
 
     if log_dir:
-        _run_logdir = get_new_run_directory(log_dir)
+        _run_logdir = get_new_run_directory(log_dir,randomstr=runidstr)
         writer = create_summary_writer(_model, dtloader.train_dataloader, _run_logdir, device)
         if log_info: # log all parameters
             for k,v in log_info.items():
@@ -218,8 +210,8 @@ def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10,
 
     # Checkpoints model/Adds event handler to trainer engine
     if model_checkpoint_dir:
-        model_checkpoint_path = get_new_run_directory(model_checkpoint_dir)
-        checkpointer = ModelCheckpoint(model_checkpoint_path, 'ModelWSD', save_interval=1, n_saved=2, 
+        model_checkpoint_path = get_new_run_directory(model_checkpoint_dir,randomstr=runidstr)
+        checkpointer = ModelCheckpoint(model_checkpoint_path, 'ModelWSD_{}'.format(runidstr), save_interval=1, n_saved=2, 
                                     create_dir=True, save_as_state_dict=True,require_empty=False)
         trainer.add_event_handler(Events.EPOCH_COMPLETED, checkpointer, {'ModelWSD': model})
 
@@ -231,6 +223,17 @@ def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10,
 
 
 if __name__ == "__main__":
+
+    def str2bool(v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 
     parser = ArgumentParser()
@@ -263,14 +266,16 @@ if __name__ == "__main__":
                         help="bert model: default is bert-base-uncased")
     parser.add_argument("--token_layer", type=str, default='token-cls',
                         help="bert token layer type: default is token-cls")
-    parser.add_argument("--weak_supervision", type=bool, default=False,
+    parser.add_argument("--weak_supervision", type=str2bool, default=False,
                         help="Enable context gloss weak supervision")
-    parser.add_argument("--optimize_gpu_mem", type=bool, default=False,
+    parser.add_argument("--optimize_gpu_mem", type=str2bool, default=False,
                         help="Enable non_blocking argument in pytorch to speedup GPU memory transfers")
     parser.add_argument("--num_workers", type=int, default=0,
                         help="Enable non_blocking argument in pytorch to speedup GPU memory transfers")
-    parser.add_argument("--preprocess_inputs", type=bool, default=False,
+    parser.add_argument("--preprocess_inputs", type=str2bool, default=False,
                         help="Preprocess input data (Tokenize and generate input embeddings)")
+    parser.add_argument("--comments", type=str, default='',
+                        help="COmments to go into tensorboard logs")                      
     args = parser.parse_args()
                         
              
