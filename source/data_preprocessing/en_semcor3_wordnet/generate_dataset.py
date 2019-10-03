@@ -6,6 +6,7 @@ import wordnet_gloss_search as wgs
 import parse_semcor as pssc
 
 
+
 def add_wordnet_gloss(_semcordf,verbose=True):
     """ 
     Given a base semcor corpus dataframe generates gloss column for each word
@@ -97,18 +98,33 @@ def build_joint_senseval_gloss_corpus(_basepath,verbose=True):
     if verbose: print('Done!')
     return final_corpus
 
+
+
 if __name__=='__main__':
     from argparse import ArgumentParser
     import os
+
+    def str2bool(v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+
     parser = ArgumentParser(description='Process some integers.')
     parser.add_argument('--fpath',  type=str, default='./data/raw/',
                        help='File path to the semcor directory')    
     parser.add_argument('--savepath',  type=str, default='./data/preprocessed/semcor_gloss.feather',
                        help='save path to final semcor directory')
-    parser.add_argument('--semcor',  type=bool, default=True,
+    parser.add_argument('--semcor',  type=str2bool, default=True,
                        help='save path to final semcor directory')                       
     args = parser.parse_args()
-    if args.semcor:
+    print(args)
+    
+    if args.semcor == True:
         final_corpus = build_joint_semcor_gloss_corpus(args.fpath)
     else:
         final_corpus = build_joint_senseval_gloss_corpus(args.fpath)
