@@ -22,5 +22,6 @@ ipdb==0.12.2
 pyarrow==0.14.1
 nltk==3.4.5
 tqdm==4.35.0
+streamlit==0.47.2
 #tensorboardX from git repo
 -e git://github.com/lanpa/tensorboardX#egg=tensorboardX
