@@ -93,7 +93,7 @@ def find_index_of_target_token(_df):
 
 
 
-def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,
+def preprocess_model_inputs(_df,sample_size=None, filter_bad_rows=True,
                             output_len=MAX_LEN,weak_supervision=False,
                             tokenizer=DEF_TOKENIZER,**kwargs):
     """
