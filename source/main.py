@@ -274,6 +274,8 @@ if __name__ == "__main__":
                         help="Enable non_blocking argument in pytorch to speedup GPU memory transfers")
     parser.add_argument("--preprocess_inputs", type=str2bool, default=False,
                         help="Preprocess input data (Tokenize and generate input embeddings)")
+    parser.add_argument("--input_len", type=int, default=128,
+                        help="Sentence max length/padding size")
     parser.add_argument("--comments", type=str, default='',
                         help="COmments to go into tensorboard logs")                      
     args = parser.parse_args()
@@ -290,7 +292,8 @@ if __name__ == "__main__":
                         val_sample_dataloader=True,
                         pin_memory=args.optimize_gpu_mem,
                         num_workers=args.num_workers,
-                        tokenizer_type = args.model_type,              
+                        tokenizer_type = args.model_type,
+                        input_len = args.input_len            
                         )
     print()
     
