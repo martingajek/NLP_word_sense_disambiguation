@@ -3,6 +3,7 @@
 ## Pytorch ignite helper classes
 
 import torch
+from torch.nn import functional as F
 
 class Ignite_Engines():
     """
@@ -35,7 +36,9 @@ class Ignite_Engines():
             with torch.no_grad():
                 batch = (tens.to(self.device,non_blocking=self.non_blocking) for tens in batch)
                 b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
-                y_pred = self.model(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
+                logits = self.model(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
+                sm = F.softmax(logits,dim=1)
+                y_pred = torch.argmax(sm,dim=1)
                 return y_pred, y
         return eval_function
         
