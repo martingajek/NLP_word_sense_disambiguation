@@ -22,6 +22,8 @@ def read_data_to_dataframe(_path,**kwargs):
         return pd.read_csv(_path,**kwargs)
     elif _path.lower().endswith('.feather'):
         return pd.read_feather(_path,**kwargs)
+    elif _path.lower().endswith('.pkl'):
+        return pd.read_pickle(_path,**kwargs)
     else:
         raise ValueError('File in wrong file format')
 
