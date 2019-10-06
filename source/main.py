@@ -259,8 +259,6 @@ if __name__ == "__main__":
                         help="log directory for Tensorboard log output")
     parser.add_argument("--checkpoint_dir", type=str, default="../data/model_checkpoints/",
                         help="log directory for Tensorboard log output")
-    parser.add_argument("--n_files", type=int, default=2,
-                        help="semcor number of files"),
     parser.add_argument("--model", type=str, default='bert') # can be xlnet as well
     parser.add_argument("--model_type", type=str, default='bert-base-uncased',
                         help="bert model: default is bert-base-uncased")
@@ -277,6 +275,8 @@ if __name__ == "__main__":
     parser.add_argument("--input_len", type=int, default=128,
                         help="Sentence max length/padding size")
     parser.add_argument("--comments", type=str, default='',
+                        help="COmments to go into tensorboard logs")
+    parser.add_argument("--class_weights", type=str, default='',
                         help="COmments to go into tensorboard logs")                      
     args = parser.parse_args()
                         
