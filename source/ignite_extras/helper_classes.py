@@ -23,8 +23,8 @@ class Ignite_Engines():
             self.optimizer.zero_grad()
             batch = (tens.to(self.device,non_blocking=self.non_blocking) for tens in batch)
             b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
-            y_pred = self.model(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
-            loss = self.criterion(y_pred, y)
+            logits = self.model(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
+            loss = self.criterion(logits, y)
             loss.backward()
             self.optimizer.step()
             return loss.item()
@@ -47,8 +47,10 @@ class Ignite_Engines():
 
         def subset_eval_function(engine, batch):
             """ Function ot be run on validation subset during the training process """
-            y_pred, y = eval_function(engine, batch)
             with torch.no_grad():
-                loss = self.criterion(y_pred, y)
+                batch = (tens.to(self.device,non_blocking=self.non_blocking) for tens in batch)
+                b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
+                logits = self.model(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
+                loss = self.criterion(logits, y)
                 return loss.item()
         return subset_eval_function
