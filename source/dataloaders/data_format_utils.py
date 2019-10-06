@@ -33,7 +33,7 @@ def format_sentences_BERT(_row,weak_supervision=False):
 
 
 def tokenize_and_index(_df,output_len=MAX_LEN,tokenizer=DEF_TOKENIZER,
-                       weak_supervision=False,display_progress = True):
+                       weak_supervision=False,display_progress = True,formatting_method=format_sentences_BERT):
     """
     Given corpus dataframe with one sentence per row as well as target word and definition
     preprocesses input sentence (adds start/sep tokens and appends context) then
@@ -43,7 +43,7 @@ def tokenize_and_index(_df,output_len=MAX_LEN,tokenizer=DEF_TOKENIZER,
    
    
     tqdm.pandas(desc="Sentence preprocessing")    
-    _df.loc[:,'preproc_sent'] = _df.progress_apply(format_sentences_BERT,axis=1,weak_supervision=weak_supervision)
+    _df.loc[:,'preproc_sent'] = _df.progress_apply(formatting_method,axis=1,weak_supervision=weak_supervision)
     tqdm.pandas(desc="Sentence Tokenization")
     _df.loc[:,'tokenized_sent'] = _df.preproc_sent.progress_apply(tokenizer.tokenize)
     tqdm.pandas(desc="Tokenizing target words")
