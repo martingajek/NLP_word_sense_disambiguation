@@ -9,6 +9,7 @@ pd.set_option('mode.chained_assignment', None) # remove pandas copy to slice war
 from argparse import ArgumentParser
 
 import torch
+from torch.nn import functional as F
 from pytorch_transformers import AdamW
 from tensorboardX import SummaryWriter
 # High(er) level api to pytorch
@@ -71,34 +72,36 @@ def register_metrics(_criterion,
     validation processes, attaches relevant metrics to proper objects.
     The criterion is  the pytorch loss function
     """
-    def thresholded_output_transform(output):
-        y_pred, y = output
-        y_pred = torch.round(y_pred)
+    def softmax_argmax_transform(output):
+        logits, y = output
+        sm = F.softmax(logits,dim=1)
+        y_pred = torch.argmax(sm,dim=1)
         return y_pred, y
+    
 
     RunningAverage(output_transform=lambda x: x).attach(_trainer_engine, 'loss')
     # Validation Accuracy (on subset of val regularly during epoch calculated on subset)
     RunningAverage(output_transform=lambda x: x).attach(_subset_validation_engine, 'loss')
     # Trainer Accuracy (on full dataset after epoch)
-    Accuracy(output_transform=thresholded_output_transform).attach(_trainer_eval_engine, 'accuracy')
+    Accuracy(output_transform=softmax_argmax_transform).attach(_trainer_eval_engine, 'accuracy')
     Loss(_criterion).attach(_trainer_eval_engine, 'bce')
     # Validation Accuracy (on full val dataset after epoch)
 
-    Accuracy(output_transform=thresholded_output_transform).attach(_validation_eval_engine, 'accuracy')
+    Accuracy(output_transform=softmax_argmax_transform).attach(_validation_eval_engine, 'accuracy')
     Loss(_criterion).attach(_validation_eval_engine, 'bce')
 
-    precision = Precision(output_transform=thresholded_output_transform,average=True)
-    recall = Recall(output_transform=thresholded_output_transform,average=True)
+    precision = Precision(output_transform=softmax_argmax_transform,average=True)
+    recall = Recall(output_transform=softmax_argmax_transform,average=True)
 
     precision.attach(_validation_eval_engine, 'Precision')
     recall.attach(_validation_eval_engine, 'Recall')
-    F1 = (precision * recall * 2 / (precision + recall))
+    F1 = (precision * recall * 2 / (precision+recall+1E-20))
     F1.attach(_validation_eval_engine, 'F1') 
 
-
+    
 def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10, 
         log_dir='../data/logs',model_checkpoint_dir='../data/model_checkpoints/',
-        log_info=None,optimize_gpu_mem=False):
+        log_info=None,optimize_gpu_mem=False,class_weights=[1.0,1.0]):
     """
     given dataloader (of TrainValDataloader class) for train, sample_validation, 
     and vallidation sets up model, optimier, criterion, metrics and log handlers and runs model.
@@ -111,7 +114,7 @@ def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10,
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     optimizer = get_set_optimizer(model,lr=lr,weight_decay_rate=weight_decay_rate)
     
-    weight = torch.FloatTensor([1.0,1.0]).to(device)
+    weight = torch.FloatTensor(class_weights).to(device)
     criterion = torch.nn.CrossEntropyLoss(weight=weight)
 
     IE = Ignite_Engines(_model,optimizer,criterion,device,non_blocking=optimize_gpu_mem)
@@ -276,8 +279,8 @@ if __name__ == "__main__":
                         help="Sentence max length/padding size")
     parser.add_argument("--comments", type=str, default='',
                         help="COmments to go into tensorboard logs")
-    parser.add_argument("--class_weights", type=str, default='',
-                        help="COmments to go into tensorboard logs")                      
+    parser.add_argument('--class_weights', nargs='+', type=float,default=[1.0,1.0], 
+                        help="class weights to be used in the loss function")
     args = parser.parse_args()
                         
              
@@ -306,8 +309,11 @@ if __name__ == "__main__":
         raise ValueError('Model does not exist or is not implemented')
     print()
     print('Initiating training')
-    run(model, dl, args.epochs, args.lr,args.weight_decay, log_interval=args.log_interval, 
-        log_dir=args.log_dir,model_checkpoint_dir=args.checkpoint_dir,log_info=vars(args))
+    run(model, dl, args.epochs, args.lr,args.weight_decay, 
+        log_interval=args.log_interval, 
+        log_dir=args.log_dir,
+        model_checkpoint_dir=args.checkpoint_dir,
+        log_info=vars(args),class_weights=args.class_weights)
 
 
 
