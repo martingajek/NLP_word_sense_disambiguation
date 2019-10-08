@@ -1,56 +1,92 @@
-# Insight_Project_Framework
-Framework for machine learning projects at Insight Data Science.
 
-## Motivation for this project format:
-- **Insight_Project_Framework** : Put all source code for production within structured directory
+# Word sense disambiguation using GlossBert
+NLP Framework for word sense disambiguation in English and Spanish using the GlossBert approach implemented in Pytorch.
+https://arxiv.org/abs/1908.07245
+
+## Project format:
+- **source** : source code for training, test and data preprocessing
+- **notebooks** : notebooks demonstrating the approach
+- **streamlit** : Demo Streamlit app for WSD sense inference in English
+- **data** : folders for raw processed and preprocessed data
+ <!---
 - **tests** : Put all source code for testing in an easy to find location
-- **configs** : Enable modification of all preset variables within single directory (consisting of one or many config files for separate tasks)
+-  **configs** : Enable modification of all preset variables within single directory (consisting of one or many config files for separate tasks)
 - **data** : Include example a small amount of data in the Github repository so tests can be run to validate installation
 - **build** : Include scripts that automate building of a standalone environment
-- **static** : Any images or content to include in the README or web framework if part of the pipeline
+- **static** : Any images or content to include in the README or web framework if part of the pipeline -->
 
 ## Setup
 Clone repository and update python path
+
+#### Installation
+Cd into the repo directory and get into development branch
 ```
-repo_name=Insight_Project_Framework # URL of your new repository
-username=mrubash1 # Username for your personal github account
-git clone https://github.com/$username/$repo_name
-cd $repo_name
-echo "export $repo_name=${PWD}" >> ~/.bash_profile
-echo "export PYTHONPATH=$repo_name/src:${PYTHONPATH}" >> ~/.bash_profile
-source ~/.bash_profile
+git checkout develop
+pip install -r requirements.txt
 ```
-Create new development branch and switch onto it
+#### Training
+
+The training uses the following datasets:
+- English Train corpus: Semcor 3.0 
+- English Test corpus: Senseval 2007 task 13
+- Wordnet 3.0 sense dictionary
+
+#### Getting the Data
+To download and preprocess files run:
 ```
-branch_name=dev-readme_requisites-20180905 # Name of development branch, of the form 'dev-feature_name-date_of_creation'}}
-git checkout -b $branch_name
+bash get_gen_dataset.sh
+```  
+
+#### Initiating the training
+
+You'll see a list of .feather files for test and train data in the ./data/preprocessed folder. 
+In order to initiate the training run (This will take a while):
+```
+python main.py --data_path=../data/preprocessed/semcor_gloss_corpus.feather \
+               --test_data_path=../data/preprocessed/senseval_gloss_corpus.feather \
+               --checkpoint_dir=../data/model_checkpoints \
+               --log_dir=../data/logs  \
+               --log_interval=2000 \
+               --preprocess_inputs=True  \
+               --token_layer='sent-cls-ws' \
+               --weak_supervision=True \
+               --comments "Whatever comment you want" \
+               --optimize_gpu_mem True \
+               --num_workers 28 \
 ```
 
-## Initial Commit
-Lets start with a blank slate: remove `.git` and re initialize the repo
+The progression of the training can be seen in tensorboard.
+
 ```
-cd $repo_name
-rm -rf .git   
-git init   
-git status
-```  
-You'll see a list of file, these are files that git doesn't recognize. At this point, feel free to change the directory names to match your project. i.e. change the parent directory Insight_Project_Framework and the project directory Insight_Project_Framework:
-Now commit these:
+tensorboard --logdir=../data/logs 
 ```
-git add .
-git commit -m "Initial commit"
-git push origin $branch_name
+
+
+
+
+#### Visualizing the results in the Streamlit app
+
+For inference go to the streamlit directory and run:
+
 ```
+streamlit run run_inference.py --model_dir=<Your_model_dir>
+```
+
+
+
 
 ## Requisites
 
-- List all packages and software needed to build the environment
-- This could include cloud command line tools (i.e. gsutil), package managers (i.e. conda), etc.
+#### Main Dependencies
 
-#### Dependencies
-
+- Pytorch
+- tensorflow/keras (For tensor padding) 
+- Pytorch-ignite
+- TensorboardX
 - [Streamlit](streamlit.io)
 
+
+<!--
 #### Installation
 To install the package above, pleae run:
 ```shell
@@ -124,3 +160,5 @@ pip install -r requiremnts
 # Step 1
 # Step 2
 ```
+
+-->
