@@ -14,16 +14,45 @@ sys.path.append('../source/')
 sys.path.append('../source/models')
 sys.path.append('../source/dataloaders/')
 
-MODEL_PATH = '../data/model_checkpoints/run5/bertWSD_bertWSD_5.pth'
-
 from models import bert
 import ipdb
+
+import nltk
+nltk.download('punkt')
+nltk.download('stopwords')
+
 from nltk.corpus import stopwords
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 
+#from argparse import ArgumentParser
+import sys
+
+#TOKEN_LAYER = 'sent-cls-ws'
+TOKEN_LAYER = 'token-cls'
 OUTPUT_LEN = 128
+WEAK_SUPERVISION = False
+import ipdb
 
 #%%
+
+
+def check_model_file():
+    import urllib3
+    import os
+    import shutil
+    url = 'https://drive.google.com/file/d/1z47HDDC4BLPlPBUHOC7YoEizOcDxSW59/view?usp=sharing'
+    model_path = '../data/model_checkpoints/ModelWSD_ZTDOPC2AW5_ModelWSD_4.pth'
+    
+    if not os.path.exists(model_path):
+        st.write('Downloading model')
+        http = urllib3.PoolManager()
+
+        with http.request('GET', url, preload_content=False) as r, open(model_path, 'wb') as out_file:       
+            shutil.copyfileobj(r, out_file)
+      
+    return
+
 
 def format_sentence_BERT(_sent,_gloss,_target,weak_supervision=False):
     """ Given dataframe input row, formats input sentence for tokenization:
@@ -79,8 +108,7 @@ def tokenize_input_sentence(input_text):
     return tokenized
 
 
-@st.cache
-def process_data(_context,_target_word,_definitions,verbose=False):
+def process_data(_context,_target_word,_definitions,verbose=False,weak_supervision=WEAK_SUPERVISION):
     tokenizer = get_tokenizer()
     sentence_gloss = []
     #tokenized_sentence_gloss = []
@@ -89,8 +117,11 @@ def process_data(_context,_target_word,_definitions,verbose=False):
     sentence_embeddings = []
     index_target_tokens = []
     _out_definitions = []
-    for definition in _definitions:
-        formatted_sentence = format_sentence_BERT(_context,definition,target_word,weak_supervision=True)
+    
+    bar = st.progress(0)
+    for i,definition in enumerate(_definitions):
+        bar.progress((i + 1)/len(_definitions))
+        formatted_sentence = format_sentence_BERT(_context,definition,target_word,weak_supervision=weak_supervision)
         tokenized_sentence = tokenize_input_sentence(formatted_sentence)
         sentence_word_embedding = tokenizer.convert_tokens_to_ids(tokenized_sentence)
         sentence_embedding = get_index_of_sep(tokenized_sentence)
@@ -120,51 +151,85 @@ def get_definitions(_target_word):
 
 @st.cache
 def get_model():
-    model = bert.BertForWSD(output_logits=True,token_layer='sent-cls-ws')
-    model.load_state_dict(torch.load(MODEL_PATH,map_location=torch.device('cpu')))
+    print('logging model again')
+    #_model_path = '../data/model_checkpoints/run5/bertWSD_bertWSD_5.pth'
+    _model_path = '../data/model_checkpoints/ModelWSD_ZTDOPC2AW5_ModelWSD_4.pth'
+    model = bert.BertForWSD(output_logits=True,token_layer=TOKEN_LAYER)
+    model.load_state_dict(torch.load(_model_path,map_location=torch.device('cpu')))
     ev = model.eval()
-    return model
+    return ev
 
 @st.cache
 def model_output(tokens_tensor, sentence_tensor, target_token_ids,_model):
     with torch.no_grad():
-        _out = model.forward(tokens_tensor, sentence_tensor, target_token_ids.unsqueeze(dim=1))
+        _out = _model.forward(tokens_tensor, sentence_tensor, target_token_ids.unsqueeze(dim=1))
         _sm = torch.nn.Softmax(dim=1)
         _select = torch.argmax(_sm(_out),dim=1)
         return _select, _sm(_out)
 
+@st.cache(suppress_st_warning=True)
+def process_predict(_context,_target_word,verbose=False):
+    _model = get_model()
+    _definitions = get_definitions(target_word)
+    _tokens_tensor, _sentence_tensor, _target_token_ids, _out_definitions = process_data(_context,
+                                                                                        _target_word,
+                                                                                        _definitions,
+                                                                                        verbose=verbose)
+    _out,_sm = model_output(_tokens_tensor, _sentence_tensor, _target_token_ids, _model)
+    return _out.tolist(), _sm,_definitions
+
+def rank_definitions(_softmax,_definitions):
+    _out = torch.argmax(_softmax,dim=1).numpy()
+    _scores = _softmax.numpy()
+    _selected_scores = np.zeros_like(_out).astype(np.float32)    
+    _selected_scores[np.where(_out == 1)] = _scores[_out == 1][:,1]
+    _selected_scores[np.where(_out == 0)] = -_scores[_out == 0][:,0]
+    _sorted_indices = np.argsort(_selected_scores)
+    _ordered_dictionary = [_definitions[i] for i in _sorted_indices]
+    return _out[_sorted_indices], _ordered_dictionary
+
+
+
+    
+
+
+
     
 
 #%%
+check_model_file()
+st.sidebar.title('__Sense__ Finder')
 
+filepath = sys.argv[0]
 TOKENIZER = get_tokenizer()
-#model = bert.BertForWSD(output_logits=True,token_layer='sent-cls-ws')
+target_word = st.sidebar.selectbox('Select Model Language',['English','Spanish'])
+context = st.sidebar.text_input('Enter Sentence', '')
+en_stopwords = set(stopwords.words('english'))
+
+tokens = [""]+[word for word in word_tokenize(context) if word.lower() not in en_stopwords and word not in ',.']
+target_word = st.sidebar.selectbox('Select Target word',tokens)
 
 
-model = get_model()
 
-context = st.sidebar.text_input('Enter Sentence', 'default')
-target_word = st.sidebar.multiselect('explanation2',tokenize_input_sentence(context))
 if target_word:
-    target_word = target_word[0]
-    st.title('Definitions of {}:'.format(target_word))
-    definitions = get_definitions(target_word)
-
-    _tokens_tensor, _sentence_tensor, _target_token_ids, _out_definitions = process_data(context,target_word,definitions,verbose=False)
-    out,sm = model_output(_tokens_tensor, _sentence_tensor, _target_token_ids,_out_definitions)
     
-    outputs = out.tolist()
+    st.title('Definitions of {}:'.format(target_word))
+    out,sm,definitions = process_predict(context,target_word,verbose=False)
+    
+    #if st.sidebar.button('Rank'):
+    #    out,definitions = rank_definitions(sm,definitions)
 
-    for i,(_out,definition) in enumerate(zip(outputs,definitions)):
-        if _out == 1:
+    for i,(out,definition) in enumerate(zip(out,definitions)):
+        if out == 1:
             outstr = '{} {} ** {} **'.format(i,u'\u2713',definition.capitalize(),unsafe_allow_html=True)
             st.markdown(outstr)
         else:
             st.write('{}'.format(i),' ',definition.capitalize())
 
-    #st.write(out)
-    #st.write(sm)
 
+    #st.write(sm.numpy())
+
+        
     
 
 
