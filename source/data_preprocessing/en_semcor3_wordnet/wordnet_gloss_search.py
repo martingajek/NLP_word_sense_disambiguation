@@ -45,7 +45,6 @@ def wordnet_get_other_glosses(_ref,select_name=False):
         return ''
 
     other_senses = get_other_senses(_ref,select_name=select_name)
-    #ipdb.set_trace()
     if not isinstance(other_senses,list): # if error
         return [other_senses]
     definition_list = [syn.definition() for syn in get_other_senses(_ref,select_name=select_name)]

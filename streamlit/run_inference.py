@@ -15,7 +15,7 @@ sys.path.append('../source/models')
 sys.path.append('../source/dataloaders/')
 
 from models import bert
-import ipdb
+
 
 import nltk
 nltk.download('punkt')
@@ -32,10 +32,12 @@ import sys
 TOKEN_LAYER = 'token-cls'
 OUTPUT_LEN = 128
 WEAK_SUPERVISION = False
-import ipdb
+
 
 #%%
-
+#HTML_WRAPPER = """<div style="overflow-x: auto; border: 1px solid #e6e9ef; border-radius: 0.25rem; padding: 1rem; margin-bottom: 2.5rem">{}</div>"""
+#HTML_WRAPPER = """<div style="overflow-x: auto; border: 1px solid #e6e9ef; border-radius: 0.25rem; padding: 1rem; margin-bottom: 2.5rem">{}</div>"""
+HTML_WRAPPER = """<mark class="blue">{}</mark>"""
 
 def check_model_file():
     import urllib3
@@ -197,7 +199,7 @@ def rank_definitions(_softmax,_definitions):
     
 
 #%%
-check_model_file()
+#check_model_file()
 st.sidebar.title('__Sense__ Finder')
 
 filepath = sys.argv[0]
@@ -222,7 +224,8 @@ if target_word:
     for i,(out,definition) in enumerate(zip(out,definitions)):
         if out == 1:
             outstr = '{} {} ** {} **'.format(i,u'\u2713',definition.capitalize(),unsafe_allow_html=True)
-            st.markdown(outstr)
+            #st.markdown(HTML_WRAPPER.format(definition))
+            st.write(HTML_WRAPPER.format(definition), unsafe_allow_html=True)
         else:
             st.write('{}'.format(i),' ',definition.capitalize())
 

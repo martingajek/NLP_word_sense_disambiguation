@@ -14,7 +14,7 @@ def parse_es_senseval3_corpus_xml(_fpath):
     """
     
     _, file_extension = os.path.split(os.path.splitext(_fpath)[1])
-    file_extension
+    
 
     def _xml_parse_senseval3_corpus(_xmlfile):
         _dct_list = []
@@ -24,7 +24,6 @@ def parse_es_senseval3_corpus_xml(_fpath):
         for node in sctree.iter('instance'):
             attributes = node.attrib
             sid = 0
-            #ipdb.set_trace()
             if node.find('answer') is not None:
                 sid = node.find('answer').attrib['senseid'].split('.')[1]   
 

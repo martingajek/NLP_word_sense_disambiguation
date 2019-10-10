@@ -2,7 +2,6 @@ import os,glob,pathlib
 import pandas as pd
 import xml.etree.ElementTree as ET
 from tqdm import tqdm
-import ipdb
 
 ##################################################################
 #	 Methods to preprocess semcor corpus from its underlying xml 
