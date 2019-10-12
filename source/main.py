@@ -161,7 +161,7 @@ def run(_model, dtloader, epochs, lr,weight_decay_rate, log_interval=10,
                                   engine.state.output, engine.state.iteration)
             
     def subset_validation_loss(engine):
-        iterations = (engine.state.iteration - 1) % len(dtloader.train_dataloader) + 1
+        iterations = (engine.state.iteration - 1) % len(dtloader.val_dataloader) + 1
         if iterations % subset_validation_log_interval == 0:
             subset_validation_evaluator.run(dl.subset_val_dataloader)
             val_metrics = subset_validation_evaluator.state.metrics
