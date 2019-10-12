@@ -14,10 +14,10 @@ def add_wordnet_gloss(_semcordf,verbose=True):
     """
     #if verbose: print('Adding wordnet glosses')
     tqdm.pandas(desc="Gloss preprocessing") 
-    _semcordf['gloss']  = _semcordf.wn_index.progress_apply(wgs.wordnet_get_gloss)
+    _semcordf['gloss']  = _semcordf.wn_index.progress_apply(wgs.wordnet_get_gloss_byref)
     #if verbose: print('Adding other wordnet glosses to semcor...',end="")
     tqdm.pandas(desc="Adding other glosses") 
-    _semcordf['other_glosses']  = _semcordf.wn_index.progress_apply(wgs.wordnet_get_other_glosses,{'select_name':True})
+    _semcordf['other_glosses']  = _semcordf.wn_index.progress_apply(wgs.wordnet_get_other_glosses_byref,{'select_name':True})
     # number of other glosses gives an idea of the ambiguity of each word   
     _semcordf['other_glossesnum'] = _semcordf['other_glosses'].apply(len)
     if verbose: print('Done!')
@@ -33,12 +33,13 @@ def gen_sentence_context_pairs(_df):
     """
     
     concatenated_sentence = _df.text.str.cat(sep = ' ').replace(" '","'")
-    basedct = {'sent':concatenated_sentence,
+    basedct = {'context':concatenated_sentence,
                #'sent':_df.iloc[0].sent,
                'file':_df.iloc[0].file}
 
     semcor_sentences = []
-    for i,line in _df[(_df.other_glossesnum > 0) & (_df.gloss != 'WN Error')].iterrows(): 
+    # Make sure there are other glosses and that the gloss column is not null
+    for i,line in _df[(_df.other_glossesnum > 0) & (_df.gloss != 'WN Error') & (_df.gloss != '')].iterrows(): 
 
         # First append the proper context to dct with label True
         newbasedct = basedct.copy()
@@ -67,7 +68,7 @@ def build_joint_dataset(_df):
     full_dict_list = []
     for [sentnum,file],gp in tqdm(groupbyobj,total=len(groupbyobj)):
         full_dict_list.extend(gen_sentence_context_pairs(gp))
-    cols = ['file','sent','target_word','gloss','is_proper_gloss']
+    cols = ['file','context','target_word','gloss','is_proper_gloss']
     return pd.DataFrame(full_dict_list)[cols]
 
 def build_joint_semcor_gloss_corpus(_basepath,verbose=True):
