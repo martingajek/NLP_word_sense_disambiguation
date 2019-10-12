@@ -9,6 +9,7 @@ from argparse import ArgumentParser,ArgumentTypeError
 from lightning import modules as lm
 from lightning.utils import str2bool
 from dataloaders.dataloader_utils import gen_dataloader
+from multiprocessing import cpu_count
 
 
 
@@ -57,14 +58,15 @@ if __name__ == '__main__':
     print('Running with {}'.format(args))
     print()
     # ## Process Data
-    print('Preprocessing data')      
+    if args.preprocess_inputs: print('Preprocessing data')
+    else:  print('Loading data...')     
     dl = gen_dataloader(args.data_path,args.test_data_path,args.batch_size,
                         preprocess_inputs=args.preprocess_inputs,
                         sample_size=None,
                         weak_supervision=args.weak_supervision,
                         val_sample_dataloader=True,
-                        pin_memory=False,
-                        num_workers=False,
+                        pin_memory=True,
+                        num_workers=cpu_count()*2,
                         tokenizer_type = args.model_type,
                         input_len = args.input_len            
                         )
@@ -74,5 +76,9 @@ if __name__ == '__main__':
     model = lm.LightningBertClass(dl,args)
 
     # most basic trainer, uses good defaults
-    trainer = Trainer(max_nb_epochs=2, gpus=1, default_save_path=args.default_save_path,val_check_interval=args.val_check_interval)    
+    trainer = Trainer(max_nb_epochs=args.epochs, 
+                    gpus=torch.cuda.device_count(), 
+                    default_save_path=args.default_save_path,
+                    val_check_interval=args.val_check_interval,
+                    distributed_backend='ddp',)    
     trainer.fit(model)
