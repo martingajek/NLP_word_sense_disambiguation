@@ -1,7 +1,9 @@
 import torch
+import torch.nn.functional as F
 import pytorch_lightning as pl
 from models.bert import BertForWSD
 from pytorch_transformers import AdamW
+from lightning.metrics_loggers import metrics_logger
 
 
 
@@ -10,7 +12,7 @@ class LightningBertClass(pl.LightningModule):
     def __init__(self,_dataloaders,_criterion,_args):
         super(LightningBertClass, self).__init__()
         """
-        pytorch-lighnting model class
+        pytorch-lightning model class
         _data is a dataloader clasa
         _criterion is the pytorch loss function        
         """
@@ -19,19 +21,23 @@ class LightningBertClass(pl.LightningModule):
         self.criterion = _criterion
         self.opt_lr = _args.lr
         self.opt_weight_decay = _args.weight_decay
+        self.metrics = metrics_logger()
+
+    def predict(self,_model_output):
+        logits = F.softmax(_model_output,dim=1)
+        y_hat = torch.argmax(logits,dim=1)
+        return y_hat
 
     def forward(self, x):
-        #x = (tens.to(self.device,non_blocking=self.non_blocking) for tens in x)
         b_tokens_tensor, b_sentence_tensor, b_target_token_tensor = x
         return self.model.forward(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
 
     def training_step(self, batch, batch_nb):
         # REQUIRED        
-        #batch = (tens.to(self.device,non_blocking=self.non_blocking) for tens in batch)
         b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
         x = b_tokens_tensor, b_sentence_tensor, b_target_token_tensor
-        y_hat = self.forward(x)
-        loss = self.criterion(y_hat, y)
+        logits = self.forward(x)
+        loss = self.criterion(logits, y)
         tensorboard_logs = {'train_loss': loss}
         return {'loss': loss, 'log': tensorboard_logs}
 
@@ -39,13 +45,21 @@ class LightningBertClass(pl.LightningModule):
         # OPTIONAL
         b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
         x = b_tokens_tensor, b_sentence_tensor, b_target_token_tensor
-        y_hat = self.forward(x)
-        return {'val_loss': self.criterion(y_hat, y)}
+        logits = self.forward(x)
+        y_hat = self.predict(logits)
+        self.metrics.update(y_hat,y)
+        return {'val_loss': self.criterion(logits, y)}
 
     def validation_end(self, outputs):
         # OPTIONAL
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        tensorboard_logs = {'val_loss': avg_loss}
+        tensorboard_logs = {'avg_val_loss': avg_loss, 
+                'val_accuracy':self.metrics.accuracy,
+                'val_precision':self.metrics.precision,
+                'val_recall':self.metrics.recall, 
+                'val_f1':self.metrics.f1,        
+                }
+        self.metrics.reset()
         return {'avg_val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):

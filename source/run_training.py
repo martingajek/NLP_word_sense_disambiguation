@@ -88,5 +88,5 @@ if __name__ == '__main__':
     model = lm.LightningBertClass(dl,criterion,args)
 
     # most basic trainer, uses good defaults
-    trainer = Trainer(max_nb_epochs=1, gpus=1, default_save_path='../data/')    
+    trainer = Trainer(max_nb_epochs=2, gpus=1, default_save_path='../data/')    
     trainer.fit(model)
