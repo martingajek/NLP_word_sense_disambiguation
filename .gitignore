@@ -5,6 +5,11 @@
 *.pyc
 *.pyo
 *.naf
+*.xml
+*.pyt
+*.info
+*.pkl
+*.key
 *.feather
 *checkpoint.ipynb
 __pycache__/
