@@ -12,6 +12,7 @@ __pycache__/
 .ipynb_checkpoints/
 notebooks/.ipynb_checkpoints/
 model_checkpoints/
+lightning_logs/
 
 logs/
 
