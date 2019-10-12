@@ -9,7 +9,7 @@ from lightning.metrics_loggers import metrics_logger
 
 class LightningBertClass(pl.LightningModule):
 
-    def __init__(self,_dataloaders,_criterion,_args):
+    def __init__(self,_dataloaders,_args,criterion=None):
         super(LightningBertClass, self).__init__()
         """
         pytorch-lightning model class
@@ -17,11 +17,14 @@ class LightningBertClass(pl.LightningModule):
         _criterion is the pytorch loss function        
         """
         self.model = BertForWSD(model_type=_args.model_type,token_layer=_args.token_layer)
+        self.criterion = criterion
+        if not self.criterion:
+            self.criterion = torch.nn.CrossEntropyLoss()
         self.combined_dataloaders = _dataloaders
-        self.criterion = _criterion
         self.opt_lr = _args.lr
         self.opt_weight_decay = _args.weight_decay
         self.metrics = metrics_logger()
+
 
     def predict(self,_model_output):
         logits = F.softmax(_model_output,dim=1)

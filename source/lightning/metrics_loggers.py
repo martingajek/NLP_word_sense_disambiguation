@@ -1,7 +1,12 @@
 import numpy as np
 
 class metrics_logger():
-    def __init__(self,running_average=False):
+    """
+    Simple logger for precision recall and F1
+    """
+
+
+    def __init__(self,running_average=True):
         self.TP = 0
         self.TN = 0
         self.FP = 0
