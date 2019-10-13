@@ -27,8 +27,8 @@ def format_sentences_BERT(_row,weak_supervision=False):
     and appends [CLS] and [SEP] tags.   
     """
     if not weak_supervision:
-        return '[CLS] '+_row.loc['sent']+' [SEP] '+_row.loc['gloss']+' [SEP]'
-    return '[CLS] '+_row.loc['sent']+' [SEP] '+_row.loc['target_word']+': '+_row.loc['gloss']+' [SEP]'
+        return '[CLS] '+_row.loc['context']+' [SEP] '+_row.loc['gloss']+' [SEP]'
+    return '[CLS] '+_row.loc['context']+' [SEP] '+_row.loc['target_word']+': '+_row.loc['gloss']+' [SEP]'
 
 
 
