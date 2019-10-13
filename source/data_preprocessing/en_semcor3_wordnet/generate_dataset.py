@@ -7,7 +7,7 @@ import parse_semcor as pssc
 
 
 
-def add_wordnet_gloss(_semcordf,verbose=True):
+def add_wordnet_gloss_byref(_semcordf,verbose=True):
     """ 
     Given a base semcor corpus dataframe generates gloss column for each word
     adds a corresponding to other glosses not relevant in each context
@@ -21,6 +21,26 @@ def add_wordnet_gloss(_semcordf,verbose=True):
     # number of other glosses gives an idea of the ambiguity of each word   
     _semcordf['other_glossesnum'] = _semcordf['other_glosses'].apply(len)
     if verbose: print('Done!')
+    return _semcordf
+
+def add_wordnet_gloss(_semcordf,verbose=True):
+    """ 
+    Given a base semcor corpus dataframe generates gloss column for each word
+    adds a corresponding to other glosses not relevant in each context
+    """
+    #if verbose: print('Adding wordnet glosses')
+    _semcordf['idx'] = list(range(len(_semcordf))) #adding index for merging
+    tqdm.pandas(desc="Gloss preprocessing") 
+    _glosses = _semcordf[_semcordf.wn_sense_num != '0'].progress_apply(lambda _row: (*wgs.wordnet_gloss_helper(_row['lemma'],_row['wn_sense_num'])\
+                                                                        ,_row['idx']),axis=1 )
+    _df_glosses = pd.DataFrame(_glosses.values.tolist(),columns=['gloss','other_glosses','idx'])
+    _merged = pd.merge(_semcordf,_df_glosses,on='idx',how='left').fillna('')
+    # for now take only first gloss
+    _merged['gloss'] = _merged.gloss.apply(lambda x: x[0] if x else '')
+    # tag how many other glosses there are
+    _merged['other_glossesnum'] = _merged.other_glosses.apply(lambda x: len(x))   
+    if verbose: print('Done!')
+    return _merged
 
 
 def gen_sentence_context_pairs(_df):
@@ -71,29 +91,36 @@ def build_joint_dataset(_df):
     cols = ['file','context','target_word','gloss','is_proper_gloss']
     return pd.DataFrame(full_dict_list)[cols]
 
-def build_joint_semcor_gloss_corpus(_basepath,verbose=True):
+def build_joint_semcor_gloss_corpus(_basepath,verbose=True,byref=False):
     """
     Given filepath to base folder of semcor3.0 corpus containing the xml files
-    Parses corpus and generates joint context-gloss pairs from wordnet glosses    
+    Parses corpus and generates joint context-gloss pairs from wordnet glosses 
+    if byref is passed the dictionary lookup is done byy reference not by word   
     """
     
     semcor_corpus_df = pssc.build_semcor_corpus(_basepath,verbose=verbose)
-    add_wordnet_gloss(semcor_corpus_df,verbose=verbose)
+    if byref:
+        semcor_corpus_df = add_wordnet_gloss_byref(semcor_corpus_df,verbose=verbose)
+    else:
+        semcor_corpus_df = add_wordnet_gloss(semcor_corpus_df,verbose=verbose)
     if verbose: print('Processing adn labeling joint cintext-gloss pairs...',end="")
     final_corpus = build_joint_dataset(semcor_corpus_df)
     if verbose: print('Done!')
     return final_corpus
 
-def build_joint_senseval_gloss_corpus(_basepath,verbose=True):
+def build_joint_senseval_gloss_corpus(_basepath,verbose=True,**kwargs):
     """
     Given filepath to base folder of senseval 2007 task 17 corpus containing the xml files
     Parses corpus and generates joint context-gloss pairs from wordnet glosses    
+    senseval cannot be built by word since there is no sense_id
     """
     
     senseval_corpus_df = pssc.build_semcor_corpus(_basepath,verbose=verbose)
     ## removes artefact in wordnet ref number
     senseval_corpus_df['wn_index'] = senseval_corpus_df['wn_index'].str.split('%').apply(lambda x:'%'.join(x[1:]))
-    add_wordnet_gloss(senseval_corpus_df,verbose=verbose)
+    senseval_corpus_df = add_wordnet_gloss_byref(senseval_corpus_df,verbose=verbose)
+    #else:
+    #    senseval_corpus_df = add_wordnet_gloss(senseval_corpus_df,verbose=verbose)
     if verbose: print('Processing adn labeling joint cintext-gloss pairs...',end="")
     final_corpus = build_joint_dataset(senseval_corpus_df)
     if verbose: print('Done!')

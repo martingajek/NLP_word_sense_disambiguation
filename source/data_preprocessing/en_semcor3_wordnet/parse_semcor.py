@@ -3,6 +3,7 @@ import pandas as pd
 import xml.etree.ElementTree as ET
 from tqdm import tqdm
 
+
 ##################################################################
 #	 Methods to preprocess semcor corpus from its underlying xml 
 #    files into pandas dataframes
@@ -30,13 +31,14 @@ def xml_parse_semcor(_fpath):
     for term in sctree.iter('term'):
         lemma = term.attrib.get('lemma')
         wordid = term.find('span/target').attrib.get('id')
+        pos = ''
 
         wnsn = '0'
         senseid=''
         if term.findall('externalReferences/externalRef'):
             wnsn = term.findall('externalReferences/externalRef')[0].attrib.get('reference')
             senseid = term.findall('externalReferences/externalRef')[1].attrib.get('reference')
-        dct_list2.append({'id':wordid,'lemma':lemma,'wn_sense_num':wnsn,'lexical_key':senseid})
+        dct_list2.append({'id':wordid,'lemma':lemma,'wn_sense_num':wnsn,'lexical_key':senseid,'pos':term.attrib['pos']})
 
     word_df = pd.DataFrame(dct_list1)
     sense_ref_df = pd.DataFrame(dct_list2)   

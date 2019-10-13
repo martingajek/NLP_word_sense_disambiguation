@@ -44,10 +44,10 @@ def wordnet_get_other_glosses_byref(_ref,select_name=False):
     if not _ref: # if ref is empty
         return ''
 
-    other_senses = get_other_senses(_ref,select_name=select_name)
+    other_senses = get_other_senses_byref(_ref,select_name=select_name)
     if not isinstance(other_senses,list): # if error
         return [other_senses]
-    definition_list = [syn.definition() for syn in get_other_senses(_ref,select_name=select_name)]
+    definition_list = [syn.definition() for syn in get_other_senses_byref(_ref,select_name=select_name)]
     return definition_list
 
 def wordnet_get_glosses(_word,_sense_id):
