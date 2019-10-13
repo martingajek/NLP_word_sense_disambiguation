@@ -106,6 +106,7 @@ def build_joint_semcor_gloss_corpus(_basepath,verbose=True,byref=False):
     if verbose: print('Processing adn labeling joint cintext-gloss pairs...',end="")
     final_corpus = build_joint_dataset(semcor_corpus_df)
     if verbose: print('Done!')
+    final_corpus['gloss'] = final_corpus.gloss.apply(lambda x: x[0] if type(x) == list else x)
     return final_corpus
 
 def build_joint_senseval_gloss_corpus(_basepath,verbose=True,**kwargs):
@@ -124,6 +125,7 @@ def build_joint_senseval_gloss_corpus(_basepath,verbose=True,**kwargs):
     if verbose: print('Processing adn labeling joint cintext-gloss pairs...',end="")
     final_corpus = build_joint_dataset(senseval_corpus_df)
     if verbose: print('Done!')
+    final_corpus['gloss'] = final_corpus.gloss.apply(lambda x: x[0] if type(x) == list else x)
     return final_corpus
 
 
