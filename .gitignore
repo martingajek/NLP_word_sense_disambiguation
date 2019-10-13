@@ -11,6 +11,7 @@
 *.pkl
 *.key
 *.feather
+*.csv
 *checkpoint.ipynb
 __pycache__/
 *.py[cod]
