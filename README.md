@@ -40,7 +40,8 @@ bash get_gen_dataset.sh
 #### Initiating the training
 
 You'll see a list of .feather files for test and train data in the ./data/preprocessed folder. 
-In order to initiate the training run (The data processing for semcor will take a while ~30min):
+In order to initiate the training cd into the source directory and run (The data processing for semcor/senseval
+will take a while ~30min):
 ```
 python run_training.py \
      --data_path=../data/preprocessed/semcor_gloss.pkl \
