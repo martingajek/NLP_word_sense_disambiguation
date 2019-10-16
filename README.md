@@ -42,18 +42,19 @@ bash get_gen_dataset.sh
 You'll see a list of .feather files for test and train data in the ./data/preprocessed folder. 
 In order to initiate the training run (The data processing for semcor will take a while ~30min):
 ```
-python run_training.py --data_path=../data/preprocessed/semcor_gloss_corpus.pkl \
-               --test_data_path=../data/preprocessed/senseval_gloss.pkl \
-               --default_save_path=../data \ 
-               --weak_supervision = True \ 
-               --preprocess_inputs=True  \
-               --token_layer='sent-cls-ws' \
-               --batch_size=16 \ 
-               --val_check_interval=0.05 \
-               --model_type='bert-base-uncased' \
-               --lr=2e-5 \ 
-               --weight_decay=0.01 \
-               --epochs=4
+python run_training.py \
+     --data_path=../data/preprocessed/semcor_gloss.pkl \
+     --test_data_path=../data/preprocessed/senseval_gloss.pkl \
+     --default_save_path=../data \
+     --weak_supervision=True \
+     --preprocess_inputs=True \
+     --token_layer='sent-cls-ws' \
+     --batch_size=16 \
+     --val_check_interval=0.05 \
+     --model_type='bert-base-uncased' \
+     --lr=2e-5 \
+     --weight_decay=0.01 \
+     --epochs=4
 
 ```
 
