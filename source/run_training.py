@@ -43,14 +43,12 @@ if __name__ == '__main__':
                         help="bert token layer type: default is token-cls")
     parser.add_argument("--weak_supervision", type=str2bool, default=False,
                         help="Enable context gloss weak supervision")
-    #parser.add_argument("--num_workers", type=int, default=0,
-    #                    help="Enable non_blocking argument in pytorch to speedup GPU memory transfers")
     parser.add_argument("--preprocess_inputs", type=str2bool, default=False,
                         help="Preprocess input data (Tokenize and generate input embeddings)")
     parser.add_argument("--input_len", type=int, default=128,
                         help="Sentence max length/padding size")
-    parser.add_argument("--comments", type=str, default='',
-                        help="Comments to go into tensorboard logs")
+    #parser.add_argument("--comments", type=str, default='',
+    #                    help="Comments to go into tensorboard logs")
     parser.add_argument('--class_weights', nargs='+', type=float,default=[1.0,1.0], 
                         help="class weights to be used in the loss function")
     args = parser.parse_args()
