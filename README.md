@@ -40,27 +40,28 @@ bash get_gen_dataset.sh
 #### Initiating the training
 
 You'll see a list of .feather files for test and train data in the ./data/preprocessed folder. 
-In order to initiate the training run (This will take a while):
+In order to initiate the training run (The data processing for semcor will take a while ~30min):
 ```
-python main.py --data_path=../data/preprocessed/semcor_gloss_corpus.feather \
-               --test_data_path=../data/preprocessed/senseval_gloss_corpus.feather \
-               --checkpoint_dir=../data/model_checkpoints \
-               --log_dir=../data/logs  \
-               --log_interval=2000 \
+python main.py --data_path=../data/preprocessed/semcor_gloss_corpus.pkl \
+               --test_data_path=../data/preprocessed/senseval_gloss.pkl \
+               --default_save_path=../data \ 
+               --weak_supervision = True \ 
                --preprocess_inputs=True  \
                --token_layer='sent-cls-ws' \
-               --weak_supervision=True \
-               --comments "Whatever comment you want" \
-               --optimize_gpu_mem True \
-               --num_workers 28 \
+               --batch_size=16 \ 
+               --val_check_interval=0.05 \
+               --model_type='bert-base-uncased' \
+               --lr=2e-5 \ 
+               --weight_decay=0.01 \
+               --epochs=4
+
 ```
 
 The progression of the training can be seen in tensorboard.
 
 ```
-tensorboard --logdir=../data/logs 
+tensorboard --logdir=../data/lighnting_logs 
 ```
-
 
 #### Visualizing the results in the Streamlit app
 
@@ -68,8 +69,9 @@ For inference go to the streamlit directory and run:
 
 ```
 streamlit run run_inference.py --model_dir=<Your_model_dir>
-```
 
+```
+the default model location is in ./data/lightning_logs/version_#/
 
 ## Requisites
 
@@ -77,8 +79,8 @@ streamlit run run_inference.py --model_dir=<Your_model_dir>
 
 - Pytorch
 - tensorflow/keras (For tensor padding) 
-- Pytorch-ignite
-- TensorboardX
+- Pytorch-lightning
+- TensorboardX (Included in pytorch lighning)
 - [Streamlit](streamlit.io)
 
 
