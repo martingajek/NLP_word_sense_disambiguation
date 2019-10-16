@@ -17,9 +17,9 @@ cd ../../
 echo " "
 echo "Building Train dataset"
 python  $PWD/source/data_preprocessing/en_semcor3_wordnet/generate_dataset.py \
-        --fpath=$PWD/data/raw/semcor3.0 --savepath=./data/preprocessed/semcor_gloss.feather
+        --fpath=$PWD/data/raw/semcor3.0 --savepath=./data/preprocessed/semcor_gloss.pkl
 echo " "
 echo "Building Test dataset"
 python  $PWD/source/data_preprocessing/en_semcor3_wordnet/generate_dataset.py \
         --semcor=False --fpath=$PWD/data/raw/semeval2007_task17_allwords \
-        --savepath=./data/preprocessed/senseval_gloss.feather
+        --savepath=./data/preprocessed/senseval_gloss.pkl

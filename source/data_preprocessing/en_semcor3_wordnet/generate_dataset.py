@@ -158,6 +158,7 @@ if __name__=='__main__':
         final_corpus = build_joint_semcor_gloss_corpus(args.fpath)
     else:
         final_corpus = build_joint_senseval_gloss_corpus(args.fpath)
-    final_corpus.to_feather(args.savepath)
+    #final_corpus.to_feather(args.savepath)
+    final_corpus.to_pickle(args.savepath)
 
 
