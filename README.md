@@ -20,9 +20,16 @@ Project specifics can be viewed in those [slides](https://bit.ly/2mL0fo9)
 Clone repository and update python path
 
 #### Installation
+create a new environment ,in conda:
+
+```
+conda create -n <your env name>
+source activate <your env name>
+```
+
 Cd into the repo directory and get into development branch
 ```
-pip install -r requirements.txt
+pip install --ignore-installed -r requirements.txt
 ```
 #### Training
 
