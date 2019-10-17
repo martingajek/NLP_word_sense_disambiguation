@@ -5,13 +5,20 @@
 *.pyc
 *.pyo
 *.naf
+*.xml
+*.pyt
+*.info
+*.pkl
+*.key
 *.feather
+*.csv
 *checkpoint.ipynb
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
 notebooks/.ipynb_checkpoints/
 model_checkpoints/
+lightning_logs/
 
 logs/
 

@@ -17,15 +17,17 @@ class TokenClsFunction(Function):
     def forward(ctx, input, target_token_tensor):
         ctx.save_for_backward(input,target_token_tensor)
         target_token_tensor.requires_grad = False
-        return input[arange(target_token_tensor.shape[0]),target_token_tensor,:]
+        flattened_target_tensor = target_token_tensor.flatten()
+        return input[arange(flattened_target_tensor.shape[0]),flattened_target_tensor,:]
 
         
     @staticmethod
     def backward(ctx, grad_output):
         input1,target_token_tensor = ctx.saved_tensors
         grad = zeros_like(input1)
+        flattened_target_tensor = target_token_tensor.flatten()
         # gradient only flows to specific indexes of target tensor
-        grad[arange(target_token_tensor.shape[0]),target_token_tensor,:] = grad_output
+        grad[arange(flattened_target_tensor.shape[0]),flattened_target_tensor,:] = grad_output
         return grad, zeros_like(target_token_tensor)  
     
 class SentClsFunction(Function):

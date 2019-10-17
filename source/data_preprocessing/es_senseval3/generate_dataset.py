@@ -6,7 +6,7 @@ import os
 from glob import glob
 import parse_es_senseval as ps
 
-def find_files(_basepath,ext='*.train.tagged.xml.gz'):
+def find_files(_basepath,ext='*.train.tagged.xml'):
     filelist = [file for file in glob(os.path.join(_basepath,'**',ext))]
     if not filelist:
         filelist = [file for file in glob(os.path.join(_basepath,ext))]
@@ -23,7 +23,7 @@ def build_joint_train_es_senseval_gloss_corpus(_basepath,verbose=True):
     Given filepath to base folder of semseval 3 spanish corpus containing the xml.gz files
     Parses corpus and generates joint context-gloss pairs from wordnet glosses  """
 
-    _train_corpus_fileref = find_files(_basepath,'*.train.tagged.xml.gz')
+    _train_corpus_fileref = find_files(_basepath,'*.train.tagged.xml')
     _dict_fileref = find_files(_basepath,'MiniDir.xml')
        
     if verbose: print('Parsing training corpus')
@@ -47,7 +47,7 @@ def build_joint_test_es_senseval_gloss_corpus(_basepath,verbose=True):
 
 
     _dict_fileref = find_files(_basepath,'MiniDir.xml')
-    _test_corpus_fileref = find_files(_basepath,'*.test.tagged.xml.gz')
+    _test_corpus_fileref = find_files(_basepath,'*.test.tagged.xml')
     _test_key_file = find_files(_basepath,'*.test.key')
         
     if verbose: print('Parsing dictionary')
@@ -81,3 +81,30 @@ def build_joint_es_senseval_gloss_corpus(_basepath,verbose=True):
 
 
 
+if  __name__ == '__main__':
+    from argparse import ArgumentParser
+    import os
+
+    def str2bool(v):
+        if isinstance(v, bool):
+            return v
+        if v.lower() in ('yes', 'true', 't', 'y', '1'):
+            return True
+        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+            return False
+        else:
+            raise argparse.ArgumentTypeError('Boolean value expected.')
+
+    parser = ArgumentParser(description='Process some integers.')
+    parser.add_argument('--fpath',  type=str, default='./data/raw/',
+                       help='File path to the semcor directory')   
+    parser.add_argument('--savepath_train',  type=str, default='./data/preprocessed/senseval_es_train_gloss.feather',
+                       help='save path to final train senseval directory')
+    parser.add_argument('--savepath_test',  type=str, default='./data/preprocessed/senseval_es_test_gloss.feather',
+                       help='save path to final test senseval directory')
+    args = parser.parse_args()
+    print(args)
+    print()
+    train_corpus, test_corpus = build_joint_es_senseval_gloss_corpus(args.fpath)
+    train_corpus.to_feather(args.savepath_train)
+    test_corpus.to_feather(args.savepath_test)

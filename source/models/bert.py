@@ -50,9 +50,7 @@ class BertForWSD(nn.Module):
         #print(_encoded_layers)
         # One token selection layer takes 2 imputs otherwise takes only one
         
-               
         if self.token_layer == 'token-cls':
-            #ipdb.set_trace()
             _target_token_embeddings = self.tokenselectlayer(_encoded_layers,_target_token_ids)
         else:
             _target_token_embeddings = self.tokenselectlayer(_encoded_layers)

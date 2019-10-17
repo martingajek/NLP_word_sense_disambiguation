@@ -22,13 +22,15 @@ def read_data_to_dataframe(_path,**kwargs):
         return pd.read_csv(_path,**kwargs)
     elif _path.lower().endswith('.feather'):
         return pd.read_feather(_path,**kwargs)
+    elif _path.lower().endswith('.pkl'):
+        return pd.read_pickle(_path,**kwargs)
     else:
         raise ValueError('File in wrong file format')
 
 
 def gen_dataloader(_train_path,_test_path,batch_size,
                    preprocess_inputs = False,
-                   tokenizer_type='bert-base-uncased',**kwargs):
+                   tokenizer_type='bert-base-uncased',input_len=128,**kwargs):
     """
     Helper function that takes either just the train data path or both
     train and test data an outputs the appropriate dataloader instance
@@ -56,7 +58,7 @@ def gen_dataloader(_train_path,_test_path,batch_size,
     
     train_dataset = read_data_to_dataframe(_train_path)
     if preprocess_inputs:
-        df_train = preprocess_model_inputs(train_dataset,tokenizer=tokenizer,**kwargs)
+        df_train = preprocess_model_inputs(train_dataset,tokenizer=tokenizer,output_len=input_len,**kwargs)
     else:
         df_train = train_dataset
     
@@ -66,9 +68,9 @@ def gen_dataloader(_train_path,_test_path,batch_size,
             df_test = preprocess_model_inputs(test_dataset,tokenizer=tokenizer,**kwargs)
         else:
             df_test = test_dataset
-        dl = TrainValDataloader(df_train,df_test,batch_size,**kwargs)
+        dl = TrainValDataloader(df_train,df_test,batch_size,kwargs)
         return dl
      
     
-    dl = TrainValSplitDataloader(df_train,batch_size,**kwargs)
+    dl = TrainValSplitDataloader(df_train,batch_size,kwargs)
     return dl    

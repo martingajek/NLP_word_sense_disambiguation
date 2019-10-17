@@ -27,13 +27,13 @@ def format_sentences_BERT(_row,weak_supervision=False):
     and appends [CLS] and [SEP] tags.   
     """
     if not weak_supervision:
-        return '[CLS] '+_row.loc['sent']+' [SEP] '+_row.loc['gloss']+' [SEP]'
-    return '[CLS] '+_row.loc['sent']+' [SEP] '+_row.loc['target_word']+': '+_row.loc['gloss']+' [SEP]'
+        return '[CLS] '+_row.loc['context']+' [SEP] '+_row.loc['gloss']+' [SEP]'
+    return '[CLS] '+_row.loc['context']+' [SEP] '+_row.loc['target_word']+': '+_row.loc['gloss']+' [SEP]'
 
 
 
 def tokenize_and_index(_df,output_len=MAX_LEN,tokenizer=DEF_TOKENIZER,
-                       weak_supervision=False,display_progress = True):
+                       weak_supervision=False,display_progress = True,formatting_method=format_sentences_BERT):
     """
     Given corpus dataframe with one sentence per row as well as target word and definition
     preprocesses input sentence (adds start/sep tokens and appends context) then
@@ -43,7 +43,7 @@ def tokenize_and_index(_df,output_len=MAX_LEN,tokenizer=DEF_TOKENIZER,
    
    
     tqdm.pandas(desc="Sentence preprocessing")    
-    _df.loc[:,'preproc_sent'] = _df.progress_apply(format_sentences_BERT,axis=1,weak_supervision=weak_supervision)
+    _df.loc[:,'preproc_sent'] = _df.progress_apply(formatting_method,axis=1,weak_supervision=weak_supervision)
     tqdm.pandas(desc="Sentence Tokenization")
     _df.loc[:,'tokenized_sent'] = _df.preproc_sent.progress_apply(tokenizer.tokenize)
     tqdm.pandas(desc="Tokenizing target words")
@@ -75,7 +75,7 @@ def gen_sentence_indexes(_df,output_len=MAX_LEN):
     tqdm.pandas(desc="Indexing sentences") 
     _df.loc[:,'sent_indexes'] = _df.progress_apply(get_index_of_sep,axis=1)
     padded_sent_idx = pad_sequences(_df['sent_indexes'],
-                                               maxlen=MAX_LEN, dtype="long",
+                                               maxlen=output_len, dtype="long",
                                                padding = "post", truncating = "post",value=1)
     _df.loc[:,'sent_indexes'] = np.split(padded_sent_idx, _df.shape[0], axis=0)
     
@@ -93,7 +93,7 @@ def find_index_of_target_token(_df):
 
 
 
-def preprocess_model_inputs(_df,sample_size=100, filter_bad_rows=True,
+def preprocess_model_inputs(_df,sample_size=None, filter_bad_rows=True,
                             output_len=MAX_LEN,weak_supervision=False,
                             tokenizer=DEF_TOKENIZER,**kwargs):
     """
