@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from keras.preprocessing.sequence import pad_sequences
+#from keras.preprocessing.sequence import pad_sequences
 from pytorch_transformers import BertTokenizer
 from tqdm import tqdm
 
@@ -21,16 +21,43 @@ MAX_LEN = 128
 DEF_TOKENIZER = BertTokenizer.from_pretrained('bert-base-uncased')
 
 
+### Low level helpers (Working on lists)
+
+def find_target_token(_tokenized,_target):
+    idxs_token  = [i for i,word  in \
+                         enumerate(_tokenized) \
+                         if word == _target.lower()]
+    return idxs_token[0]
+
+def gen_sentence_embeddings(_token_sent):
+        """
+        Get index of sep token and generate sentence index array
+        """ 
+        _index_sep_tokens = [i for i,word  in enumerate(_token_sent) \
+                           if word == '[SEP]']
+        _sentence_indexes = np.array([0]*(_index_sep_tokens[0]+1)\
+                                     +[1]*(_index_sep_tokens[1]-_index_sep_tokens[0]))
+        return _sentence_indexes
+
+def format_sentence(_context,_gloss,_tgt_word,weak_supervision=False):
+    if not weak_supervision:
+        return '[CLS] '+_context+' [SEP] '+_gloss+' [SEP]'
+    return '[CLS] '+_context+' [SEP] '+_tgt_word+': '+_gloss+' [SEP]'
+
+
+
+# higher lavel Pandas level helper functions
+
 def format_sentences_BERT(_row,weak_supervision=False):
     """ Given dataframe input row, formats input sentence for tokenization:
     appends context to each sentence (repeats target word if weak_supervision)
     and appends [CLS] and [SEP] tags.   
     """
-    if not weak_supervision:
-        return '[CLS] '+_row.loc['context']+' [SEP] '+_row.loc['gloss']+' [SEP]'
-    return '[CLS] '+_row.loc['context']+' [SEP] '+_row.loc['target_word']+': '+_row.loc['gloss']+' [SEP]'
 
-
+    return format_sentence(_row.loc['context'],_row.loc['gloss'],
+                           _row.loc['target_word'],weak_supervision=weak_supervision)
+    
+'''
 
 def tokenize_and_index(_df,output_len=MAX_LEN,tokenizer=DEF_TOKENIZER,
                        weak_supervision=False,display_progress = True,formatting_method=format_sentences_BERT):
@@ -61,19 +88,9 @@ def gen_sentence_indexes(_df,output_len=MAX_LEN):
     given input dataframe with on tokenized sentence per row
     generates input sentence tensor and pads it to MAX_LEN with trailing 1's (2nd sentence)
     """
-    
-    def get_index_of_sep(_row):
-        """
-        Get index of sep token and generate sentence index array
-        """ 
-        _index_sep_tokens = [i for i,word  in enumerate(_row['tokenized_sent']) \
-                           if word == '[SEP]']
-        _sentence_indexes = np.array([0]*(_index_sep_tokens[0]+1)\
-                                     +[1]*(_index_sep_tokens[1]-_index_sep_tokens[0]))
-        return _sentence_indexes
-    
+        
     tqdm.pandas(desc="Indexing sentences") 
-    _df.loc[:,'sent_indexes'] = _df.progress_apply(get_index_of_sep,axis=1)
+    _df.loc[:,'sent_indexes'] = _df.progress_apply(gen_sentence_embeddings,axis=1)
     padded_sent_idx = pad_sequences(_df['sent_indexes'],
                                                maxlen=output_len, dtype="long",
                                                padding = "post", truncating = "post",value=1)
@@ -85,11 +102,9 @@ def find_index_of_target_token(_df):
     looks for index of target token in the corresponding tokenized sentence
     
     """
-    find_token = lambda  _row: [i for i,word  in \
-                         enumerate(_row['tokenized_sent']) \
-                         if word == _row['tokenized_target_word'].lower()]
+    
     tqdm.pandas(desc="Finding target token in sentence") 
-    _df.loc[:,'target_token_idx'] = _df.progress_apply(find_token,axis=1)
+    _df.loc[:,'target_token_idx'] = _df.progress_apply(find_target_token,axis=1)
 
 
 
@@ -120,4 +135,4 @@ def preprocess_model_inputs(_df,sample_size=None, filter_bad_rows=True,
     return _smpldf
     
     
-    
+    '''

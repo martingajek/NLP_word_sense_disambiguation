@@ -1,8 +1,13 @@
 import pandas as pd
+import torch
+from torch.utils.data.dataloader import default_collate
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader, RandomSampler, SequentialSampler, SubsetRandomSampler
-import torch
+from dataloaders.transforms import transform
+from dataloaders import data_format_utils as dfu
 
+
+MAX_LEN = 128
 
 class CorpusDataset(Dataset):
     """
@@ -22,6 +27,40 @@ class CorpusDataset(Dataset):
                 torch.tensor(row['is_proper_gloss'],dtype=torch.int64)) # Labels
     
 
+class CorpusTransformDataset(CorpusDataset):
+    """
+    pytorch dataset handling class that handles the raw dataset transformation
+    into bert embeddings
+    """
+    def __init__(self, data,pad_len=MAX_LEN,weak_supervision=False,tokenizer=dfu.DEF_TOKENIZER):
+        super().__init__(data)
+        self.pad_len = pad_len
+        self.weak_super = weak_supervision
+        self.tokenizer = tokenizer
+    
+    def __getitem__(self, idx):
+        raw_row = self.corpus_dataframe.iloc[idx]
+        labels = torch.tensor(raw_row['is_proper_gloss'],dtype=torch.int64)
+        batch = transform(raw_row,self.pad_len,weak_supervision=self.weak_super,
+                          tokenizer=self.tokenizer)
+        # if the index is out of bounds default to 0 index
+        # chich is the cls token in BERT
+        if torch.gt(batch[2],self.pad_len).item():
+            token_idx,sent_embed,target_idx = batch
+            target_idx = torch.tensor(0,dtype=torch.int64)
+            batch = tuple([token_idx,sent_embed,target_idx])
+       
+        return (*batch, # Target token indexes
+                labels) # Labels
+
+'''
+def none_collate(batch):
+    """ Makes sure that none elements are filtered out of batch """
+    #batch = filter (lambda x:x is not None, batch)
+    #batch = list(filter(lambda x : x is not None, batch))
+    batch = list(item for item in batch if item is not None)
+    return default_collate(batch)
+'''
 class TrainValDataloader():
     """
     Class exposing train and validation dataloaders.
@@ -45,16 +84,20 @@ class TrainValDataloader():
     the class exposes 2 dataloaders, namely the train_dataloader and val_dataloader    
     """
     def __init__(self, train_data, test_data, batch_size, val_sample_dataloader=False, 
-                 val_sample_size=0.1,**kwargs):
+                 val_sample_size=0.1,pad_len=MAX_LEN,weak_supervision=False,tokenizer=dfu.DEF_TOKENIZER,
+                 **kwargs):
         self.batch_size = batch_size
         
-        self.train_df = train_data[['input_ids','sent_indexes',
-                            'target_token_idx','is_proper_gloss']]
-        self.val_df =  test_data[['input_ids','sent_indexes',
-                            'target_token_idx','is_proper_gloss']]
+        self.train_df = train_data
+        self.val_df = test_data
+
         
-        self.train_dataset = CorpusDataset(self.train_df)
-        self.val_dataset = CorpusDataset(self.val_df)
+        self.train_dataset = CorpusTransformDataset(self.train_df,pad_len=pad_len,
+                                                    weak_supervision=weak_supervision,
+                                                    tokenizer=tokenizer)
+        self.val_dataset = CorpusTransformDataset(self.val_df,pad_len=pad_len,
+                                                 weak_supervision=weak_supervision,
+                                                 tokenizer=tokenizer)
         
         self.train_sampler = RandomSampler(self.train_dataset)
         self.val_sampler = SequentialSampler(self.val_dataset)
@@ -101,8 +144,7 @@ class TrainValSplitDataloader(TrainValDataloader):
     def __init__(self, data, batch_size, test_size=0.2, val_sample_dataloader=False, 
                  val_sample_size=0.1,**kwargs):
                 
-                data_subset = data[['input_ids','sent_indexes',
-                            'target_token_idx','is_proper_gloss']]
+                data_subset = data
                 train_df, val_df =  train_test_split(data_subset, 
                                                        random_state=None, 
                                                        test_size=test_size)

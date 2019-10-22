@@ -43,8 +43,6 @@ if __name__ == '__main__':
                         help="bert token layer type: default is token-cls")
     parser.add_argument("--weak_supervision", type=str2bool, default=False,
                         help="Enable context gloss weak supervision")
-    parser.add_argument("--preprocess_inputs", type=str2bool, default=False,
-                        help="Preprocess input data (Tokenize and generate input embeddings)")
     parser.add_argument("--input_len", type=int, default=128,
                         help="Sentence max length/padding size")
     #parser.add_argument("--comments", type=str, default='',
@@ -56,11 +54,10 @@ if __name__ == '__main__':
     print('Running with {}'.format(args))
     print()
     # ## Process Data
-    if args.preprocess_inputs: print('Preprocessing data')
-    else:  print('Loading data...')     
+    
+    print('Loading data...')     
     dl = gen_dataloader(args.data_path,args.test_data_path,args.batch_size,
-                        preprocess_inputs=args.preprocess_inputs,
-                        sample_size=None,
+                        #sample_size=None,
                         weak_supervision=args.weak_supervision,
                         val_sample_dataloader=True,
                         pin_memory=True,
