@@ -85,6 +85,7 @@ class TrainValDataloader():
     """
     def __init__(self, train_data, test_data, batch_size, val_sample_dataloader=False, 
                  val_sample_size=0.1,pad_len=MAX_LEN,weak_supervision=False,tokenizer=dfu.DEF_TOKENIZER,
+                 train_samples=None,
                  **kwargs):
         self.batch_size = batch_size
         
@@ -99,7 +100,10 @@ class TrainValDataloader():
                                                  weak_supervision=weak_supervision,
                                                  tokenizer=tokenizer)
         
-        self.train_sampler = RandomSampler(self.train_dataset)
+        if train_samples:
+            self.train_sampler = RandomSampler(self.train_dataset,num_samples=train_samples,replacement=True)
+        else:
+            self.train_sampler = RandomSampler(self.train_dataset)
         self.val_sampler = SequentialSampler(self.val_dataset)
         
         self.train_dataloader = DataLoader(self.train_dataset, 

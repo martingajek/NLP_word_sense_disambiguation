@@ -1,4 +1,5 @@
 import torch
+from torch import optim
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from models.bert import BertForWSD
@@ -24,6 +25,8 @@ class LightningBertClass(pl.LightningModule):
         self.opt_lr = _args.lr
         self.opt_weight_decay = _args.weight_decay
         self.metrics = metrics_logger()
+        self.scheduler = _args.scheduler
+        self.hparams = _args
 
 
     def predict(self,_model_output):
@@ -78,8 +81,12 @@ class LightningBertClass(pl.LightningModule):
         'weight_decay_rate': 0.0}]
 
         # To reproduce BertAdam specific behavior set correct_bias=False
-        optimizer = AdamW(optimizer_grouped_parameters,lr=self.opt_lr)  
-        return optimizer
+        optimizer = AdamW(optimizer_grouped_parameters,lr=self.opt_lr)
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+        if self.scheduler:
+            return [optimizer], [scheduler]  
+        return optimizer 
+        
 
     @pl.data_loader
     def train_dataloader(self):

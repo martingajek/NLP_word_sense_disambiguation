@@ -29,7 +29,7 @@ def read_data_to_dataframe(_path,**kwargs):
 
 def gen_dataloader(_train_path,_test_path,batch_size,
                    tokenizer_type='bert-base-uncased',
-                   input_len=128,weak_supervision=False,**kwargs):
+                   input_len=128,weak_supervision=False,train_samples=None,**kwargs):
     """
     Helper function that takes either just the train data path or both
     train and test data an outputs the appropriate dataloader instance
@@ -63,12 +63,14 @@ def gen_dataloader(_train_path,_test_path,batch_size,
         dl = TrainValDataloader(train_dataset,test_dataset,
                                 batch_size,pad_len=input_len,
                                 tokenizer=tokenizer,val_sample_size=0.1,
-                                weak_supervision=weak_supervision,**kwargs)
+                                weak_supervision=weak_supervision,
+                                train_samples=train_samples,**kwargs)
         return dl
 
    
     dl = TrainValSplitDataloader(train_dataset,
                                  batch_size,pad_len=input_len,
                                  tokenizer=tokenizer,val_sample_size=0.1,
-                                 weak_supervision=weak_supervision,**kwargs)
+                                 weak_supervision=weak_supervision,
+                                 train_samples=train_samples,**kwargs)
     return dl    
