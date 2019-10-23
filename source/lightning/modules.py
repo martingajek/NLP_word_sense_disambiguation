@@ -54,7 +54,9 @@ class LightningBertClass(pl.LightningModule):
         logits = self.forward(x)
         y_hat = self.predict(logits)
         self.metrics.update(y_hat,y)
-        return {'val_loss': self.criterion(logits, y)}
+        lossval =self.criterion(logits, y)
+        tensorboard_logs = {'val_loss': lossval }
+        return {'val_loss': lossval, 'log': tensorboard_logs}
 
     def validation_end(self, outputs):
         # OPTIONAL
