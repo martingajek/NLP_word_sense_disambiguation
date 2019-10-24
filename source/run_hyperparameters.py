@@ -28,7 +28,7 @@ def main(hparams,*args,**kwargs):
                         val_sample_size=hparams.val_sample_size,
                         num_workers=cpu_count()*2,
                         tokenizer_type = hparams.model_type,
-                        input_len = hparams.input_len
+                        input_len = hparams.input_len,
                         )
 
     
@@ -39,15 +39,14 @@ def main(hparams,*args,**kwargs):
     trainer = Trainer(
                     #logger=exp,
                     #experiment=exp,
-                    
-                    
+                                    
                     fast_dev_run=False,
                     checkpoint_callback=hparams.enable_checkpoints,
                     max_nb_epochs=hparams.epochs, 
                     gpus=torch.cuda.device_count(), 
                     default_save_path=hparams.default_save_path,
                     val_check_interval=hparams.val_check_interval,
-                    distributed_backend='dp',)    
+                    distributed_backend=hparams.distributed_backend,)    
     trainer.fit(model)
 
 
@@ -80,6 +79,8 @@ if __name__ == '__main__':
                         help="Number trials for hyperparameter optimization")                    
     parser.add_argument('--val_sample_size', type=float, default=0.1,
                         help="fraction of test dataset to use for validation")                    
+    parser.add_argument('--distributed_backend', type=str, default=None,choices=[None,'dp','dpp','dpp2'],
+                        help="distirbuted backend type")                    
     parser.opt_list('--scheduler', type=bool,default=False,options=[True,False],tunable=True,
                         help="Enable cosine scheduler for optimizer")
     parser.opt_list('--batch_size', type=int, default=16, options=[8,16,32,64],
@@ -93,9 +94,9 @@ if __name__ == '__main__':
     #                    help='SGD momentum (default: 0.5)')    
     parser.opt_list("--token_layer", type=str, default='token-cls',
                         help="bert token layer type: default is token-cls",
-                        options=['token-cls','sent-cls','sent-cls-ws'],tunable=True)
+                        options=['token-cls','sent-cls','sent-cls-ws'],tunable=False)
     parser.opt_list("--weak_supervision", type=bool, default=True,options=[True,False],
-                    help="Enable context gloss weak supervision",tunable=True)
+                    help="Enable context gloss weak supervision",tunable=False)
     
     hyperparams = parser.parse_args()
 
