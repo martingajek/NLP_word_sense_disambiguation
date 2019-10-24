@@ -53,14 +53,6 @@ class CorpusTransformDataset(CorpusDataset):
         return (*batch, # Target token indexes
                 labels) # Labels
 
-'''
-def none_collate(batch):
-    """ Makes sure that none elements are filtered out of batch """
-    #batch = filter (lambda x:x is not None, batch)
-    #batch = list(filter(lambda x : x is not None, batch))
-    batch = list(item for item in batch if item is not None)
-    return default_collate(batch)
-'''
 class TrainValDataloader():
     """
     Class exposing train and validation dataloaders.
@@ -83,20 +75,20 @@ class TrainValDataloader():
 
     the class exposes 2 dataloaders, namely the train_dataloader and val_dataloader    
     """
-    def __init__(self, train_data, test_data, batch_size, val_sample_dataloader=False, 
+    def __init__(self, train_data, test_data, batch_size, val_dataloader=True, 
                  val_sample_size=0.1,pad_len=MAX_LEN,weak_supervision=False,tokenizer=dfu.DEF_TOKENIZER,
                  train_samples=None,
                  **kwargs):
         self.batch_size = batch_size
         
         self.train_df = train_data
-        self.val_df = test_data
+        self.test_df = test_data
 
         
         self.train_dataset = CorpusTransformDataset(self.train_df,pad_len=pad_len,
                                                     weak_supervision=weak_supervision,
                                                     tokenizer=tokenizer)
-        self.val_dataset = CorpusTransformDataset(self.val_df,pad_len=pad_len,
+        self.test_dataset = CorpusTransformDataset(self.test_df,pad_len=pad_len,
                                                  weak_supervision=weak_supervision,
                                                  tokenizer=tokenizer)
         
@@ -104,24 +96,24 @@ class TrainValDataloader():
             self.train_sampler = RandomSampler(self.train_dataset,num_samples=train_samples,replacement=True)
         else:
             self.train_sampler = RandomSampler(self.train_dataset)
-        self.val_sampler = SequentialSampler(self.val_dataset)
+        self.test_sampler = SequentialSampler(self.test_dataset)
         
         self.train_dataloader = DataLoader(self.train_dataset, 
                                            sampler=self.train_sampler, 
                                            batch_size=self.batch_size,**kwargs)
     
-        self.val_dataloader = DataLoader(self.val_dataset, 
-                                         sampler=self.val_sampler, 
+        self.test_dataloader = DataLoader(self.test_dataset, 
+                                         sampler=self.test_sampler, 
                                          batch_size=self.batch_size)
 
-        if val_sample_dataloader:
-            num_samples = int(len(self.val_dataset)*val_sample_size)
+        if val_dataloader:
+            num_samples = int(len(self.test_dataset)*val_sample_size)
             assert num_samples > 0, "Number of samples for validation sample dataloader is 0, increase val_sample_size fraction" 
-            self.subset_val_sampler = RandomSampler(self.val_dataset,
+            self.val_sampler = RandomSampler(self.test_dataset,
                                                     num_samples=num_samples,
                                                     replacement=True,)
-            self.subset_val_dataloader = DataLoader(self.val_dataset, 
-                                                 sampler=self.subset_val_sampler, 
+            self.val_dataloader = DataLoader(self.test_dataset, 
+                                                 sampler=self.val_sampler, 
                                                  batch_size=self.batch_size)
 
 
@@ -145,14 +137,14 @@ class TrainValSplitDataloader(TrainValDataloader):
 
     the class exposes 2 dataloaders, namely the train_dataloader and val_dataloader    
     """
-    def __init__(self, data, batch_size, test_size=0.2, val_sample_dataloader=False, 
+    def __init__(self, data, batch_size, test_size=0.2, val_dataloader=False, 
                  val_sample_size=0.1,**kwargs):
                 
                 data_subset = data
-                train_df, val_df =  train_test_split(data_subset, 
+                train_df, test_df =  train_test_split(data_subset, 
                                                        random_state=None, 
                                                        test_size=test_size)
-                super().__init__(train_df, val_df, batch_size, val_sample_dataloader=val_sample_dataloader, 
+                super().__init__(train_df, test_df, batch_size, val_dataloader=val_dataloader, 
                                 val_sample_size=0.1,**kwargs)
         
 
