@@ -1,6 +1,7 @@
 
 import warnings
 warnings.filterwarnings('ignore',category=FutureWarning)
+warnings.filterwarnings('ignore',category=UserWarning)
 
 import os
 import torch
@@ -12,48 +13,42 @@ from lightning.utils import str2bool
 from dataloaders.dataloader_utils import gen_dataloader
 from multiprocessing import cpu_count
 from test_tube import Experiment
-import ipdb
 
-#def main(hparams,*args,**kwargs):
-def main(hparams):
+
+def main(hparams,*args,**kwargs):
 
     #print('Running with {}'.format(hparams))
     #print()
     
     dl = gen_dataloader(hparams.data_path,hparams.test_data_path,hparams.batch_size,
-                        #sample_size=None,
                         weak_supervision=hparams.weak_supervision,
-                        val_sample_dataloader=True,
-                        pin_memory=True,
+                        val_dataloader=True,
+                        pin_memory=False,
                         train_samples=hparams.train_samples,
-                        #num_workers=cpu_count()*2,
+                        val_sample_size=hparams.val_sample_size,
                         num_workers=cpu_count()*2,
                         tokenizer_type = hparams.model_type,
                         input_len = hparams.input_len
                         )
 
-    #exp = Experiment(save_dir=hparams.default_save_path)
-    #print()
-
+    
     #weight = torch.FloatTensor(class_weights).to(device)
     model = lm.LightningBertClass(dl,hparams)
 
     # most basic trainer, uses good defaults
-    #ipdb.set_trace()
-
     trainer = Trainer(
                     #logger=exp,
                     #experiment=exp,
+                    
+                    
+                    fast_dev_run=False,
                     checkpoint_callback=hparams.enable_checkpoints,
                     max_nb_epochs=hparams.epochs, 
                     gpus=torch.cuda.device_count(), 
                     default_save_path=hparams.default_save_path,
                     val_check_interval=hparams.val_check_interval,
-                    distributed_backend='ddp',)    
+                    distributed_backend='dp',)    
     trainer.fit(model)
-
-
-
 
 
 if __name__ == '__main__':
@@ -83,7 +78,9 @@ if __name__ == '__main__':
                         help="Number trials for hyperparameter optimization")
     parser.add_argument('--train_samples', type=int, default=None,
                         help="Number trials for hyperparameter optimization")                    
-    parser.opt_list('--scheduler', type=bool,default=False,options=[True,False],tunable=False,
+    parser.add_argument('--val_sample_size', type=float, default=0.1,
+                        help="fraction of test dataset to use for validation")                    
+    parser.opt_list('--scheduler', type=bool,default=False,options=[True,False],tunable=True,
                         help="Enable cosine scheduler for optimizer")
     parser.opt_list('--batch_size', type=int, default=16, options=[8,16,32,64],
                         help='input batch size for training (default: 64)',tunable=True)    
@@ -103,6 +100,7 @@ if __name__ == '__main__':
     hyperparams = parser.parse_args()
 
     #print(hyperparams)
+                                  
     for trial in hyperparams.generate_trials(nb_trials=hyperparams.nb_trials):
         print(trial)
         main(trial)
