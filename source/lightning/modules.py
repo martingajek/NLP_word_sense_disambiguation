@@ -24,7 +24,8 @@ class LightningBertClass(pl.LightningModule):
         self.combined_dataloaders = _dataloaders
         self.opt_lr = _args.lr
         self.opt_weight_decay = _args.weight_decay
-        self.metrics = metrics_logger()
+        self.val_metrics = metrics_logger()
+        self.test_metrics = metrics_logger()
         self.scheduler = _args.scheduler
         self.hparams = _args
 
@@ -35,40 +36,68 @@ class LightningBertClass(pl.LightningModule):
         return y_hat
 
     def forward(self, x):
-        b_tokens_tensor, b_sentence_tensor, b_target_token_tensor = x
+        b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = x
         return self.model.forward(b_tokens_tensor, b_sentence_tensor, b_target_token_tensor)
 
     def training_step(self, batch, batch_nb):
         # REQUIRED        
-        b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
-        x = b_tokens_tensor, b_sentence_tensor, b_target_token_tensor
-        logits = self.forward(x)
+        y = batch[3]
+        logits = self.forward(batch)
         loss = self.criterion(logits, y)
         tensorboard_logs = {'train_loss': loss}
         return {'loss': loss, 'log': tensorboard_logs}
 
     def validation_step(self, batch, batch_nb):
         # OPTIONAL
-        b_tokens_tensor, b_sentence_tensor, b_target_token_tensor, y = batch
-        x = b_tokens_tensor, b_sentence_tensor, b_target_token_tensor
-        logits = self.forward(x)
+        y = batch[3]
+        logits = self.forward(batch)
         y_hat = self.predict(logits)
-        self.metrics.update(y_hat,y)
+        self.val_metrics.update(y_hat,y)
         lossval =self.criterion(logits, y)
-        tensorboard_logs = {'val_loss': lossval }
-        return {'val_loss': lossval, 'log': tensorboard_logs}
+        return {'val_loss': lossval}
 
     def validation_end(self, outputs):
         # OPTIONAL
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        tensorboard_logs = {'avg_val_loss': avg_loss, 
-                'val_accuracy':self.metrics.accuracy,
-                'val_precision':self.metrics.precision,
-                'val_recall':self.metrics.recall, 
-                'val_f1':self.metrics.f1,        
+        logs = {'val_loss': avg_loss, 
+                'val_accuracy':self.val_metrics.accuracy,
+                #'val_precision':self.val_metrics.precision,
+                #'val_recall':self.val_metrics.recall, 
+                'val_f1':self.val_metrics.f1,        
                 }
-        self.metrics.reset()
-        return {'avg_val_loss': avg_loss, 'log': tensorboard_logs}
+        self.val_metrics.reset()
+        return {'val_loss': logs['val_loss'],
+                #'val_accuracy': logs['val_accuracy'],
+                #'val_f1': logs['val_f1'],                
+                'log': logs,
+                'progress_bar': {'val_loss':avg_loss}}
+
+    def test_step(self, batch, batch_nb):
+        # OPTIONAL
+        y = batch[3]
+        logits = self.forward(batch)
+        y_hat = self.predict(logits)
+        self.test_metrics.update(y_hat,y)
+        lossval =self.criterion(logits, y)
+        return {'test_loss': lossval}
+
+    def test_end(self, outputs):
+        # OPTIONAL
+        avg_loss = torch.stack([x['test_loss'] for x in outputs]).mean()
+        logs = {'test_loss': avg_loss, 
+                'test_accuracy':self.test_metrics.accuracy,
+                'test_precision':self.test_metrics.precision,
+                'test_recall':self.test_metrics.recall, 
+                'test_f1':self.test_metrics.f1,        
+                }
+        self.test_metrics.reset()
+        return {'test_loss': logs['test_loss'],
+                #'test_accuracy':logs['test_accuracy'],
+                #'test_precision':logs['test_precision'],
+                #'test_recall':logs['test_recall'],
+                #'test_f1':logs['test_f1'],       
+                'log': logs,
+                'progress_bar': {'test_loss':avg_loss}}
 
     def configure_optimizers(self):
         # REQUIRED
@@ -105,4 +134,4 @@ class LightningBertClass(pl.LightningModule):
     @pl.data_loader
     def test_dataloader(self):
         # OPTIONAL
-        return self.combined_dataloaders.subset_val_dataloader
+        return self.combined_dataloaders.test_dataloader
